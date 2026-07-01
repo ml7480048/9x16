@@ -5,17 +5,20 @@
 // minimum prepay (Kling's image API needs a ~$9.80 minimum top-up). See project notes
 // for the full provider comparison (images: Nano Banana, video: Runway — Kling dropped).
 //
-// MODEL NOTE (2026-07-01): the newer "gemini-2.5-flash-image" model returned a 429 with
-// limit:0 on the free tier (image generation apparently isn't included in the free
-// allowance for that model, despite Gemini's free tier existing for text). Using the
-// older experimental "gemini-2.0-flash-exp-image-generation" instead, which community
-// docs still show as free-tier accessible as of this date. Re-verify if this changes.
+// MODEL NOTE (2026-07-01): "gemini-2.5-flash-image" is confirmed to be a valid, reachable
+// model (returns a proper structured error, not 404) — but it returns HTTP 429 with
+// limit:0 on the free tier, meaning image generation isn't actually covered by Gemini's
+// free allowance despite the general free tier existing for text. Tried falling back to
+// "gemini-2.0-flash-exp-image-generation" — that model doesn't exist for this API version
+// (404). So: this wrapper is currently BLOCKED on the free tier. To get real images,
+// enable Google AI Studio's paid prepaid billing ($10 minimum) — see project notes.
+// Until then, this always runs in mock mode regardless of key validity.
 //
 // MOCK MODE: if GEMINI_API_KEY is missing or still the placeholder value, generateSceneImage
 // returns a branded placeholder image (inline SVG data URI) instead of calling the real API.
 
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
 
 function isMockMode(): boolean {
   const key = process.env.GEMINI_API_KEY;
