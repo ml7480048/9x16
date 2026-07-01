@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json(
       { error: "Request body must be valid JSON." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
   if (missing.length > 0) {
     return NextResponse.json(
       { error: `Missing required field(s): ${missing.join(", ")}` },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -50,7 +50,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[/api/generate-scenes] failed:", error);
     const message =
-      error instanceof Error ? error.message : "Unknown error generating scenes.";
+      error instanceof Error
+        ? error.message
+        : "Unknown error generating scenes.";
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

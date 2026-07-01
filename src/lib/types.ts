@@ -2,9 +2,7 @@
 
 export type ToneOption = "lifestyle" | "thriller" | "comedy";
 export type NarrativeFormat =
-  | "slice-of-life"
-  | "micro-thriller"
-  | "character-comedy";
+  "slice-of-life" | "micro-thriller" | "character-comedy";
 export type SceneMood = "urban" | "domestic" | "outdoor" | "abstract";
 export type BrandStatus = "draft" | "generating" | "complete";
 export type VariantLabel = "A" | "B" | "C";

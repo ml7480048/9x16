@@ -11,11 +11,14 @@ const navItems = [
   { label: "Settings", href: "/platform/settings" },
 ];
 
+// A24-minimalist pass (2026-07): no longer a full-width side column — a row
+// of small text links rendered inside Header's subNav slot, directly under
+// the "9×16" logo. One floating nav row for /platform instead of two bars.
 export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="flex w-full shrink-0 flex-row gap-1 overflow-x-auto border-b border-border bg-surface p-2 sm:h-full sm:w-56 sm:flex-col sm:gap-1 sm:overflow-visible sm:border-b-0 sm:border-r sm:p-4">
+    <>
       {navItems.map((item) => {
         const active =
           pathname === item.href || pathname?.startsWith(`${item.href}/`);
@@ -34,9 +37,9 @@ export function Sidebar() {
               }
             }}
             className={cn(
-              "whitespace-nowrap rounded-input px-3 py-2 text-sm transition-colors",
+              "whitespace-nowrap text-xs transition-colors",
               active
-                ? "bg-surface-elevated text-accent"
+                ? "text-accent"
                 : "text-text-secondary hover:text-text-primary",
             )}
           >
@@ -44,6 +47,6 @@ export function Sidebar() {
           </Link>
         );
       })}
-    </aside>
+    </>
   );
 }

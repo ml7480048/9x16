@@ -2,18 +2,27 @@
 
 import { ReactNode } from "react";
 import { Input } from "@/components/ui/Input";
-import { Select } from "@/components/ui/Select";
 import { Textarea } from "@/components/ui/Textarea";
-import type { WizardFormData } from "@/lib/types";
+import { cn } from "@/lib/utils";
+import type { ToneOption, WizardFormData } from "@/lib/types";
 
 interface BrandInputFormProps {
   data: WizardFormData;
   onChange: (partial: Partial<WizardFormData>) => void;
 }
 
+const tones: { value: ToneOption; label: string }[] = [
+  { value: "lifestyle", label: "Lifestyle" },
+  { value: "thriller", label: "Thriller" },
+  { value: "comedy", label: "Comedy" },
+];
+
+// A24-minimalist pass (2026-07): one calm question at a time — underline
+// inputs, small-caps labels above, 48px+ between fields. Tone is now 3
+// plain text options instead of a dropdown.
 export function BrandInputForm({ data, onChange }: BrandInputFormProps) {
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-12">
       <Field label="Brand name">
         <Input
           value={data.brandName}
@@ -31,19 +40,23 @@ export function BrandInputForm({ data, onChange }: BrandInputFormProps) {
       </Field>
 
       <Field label="Tone">
-        <Select
-          value={data.tone}
-          onChange={(e) =>
-            onChange({ tone: e.target.value as WizardFormData["tone"] })
-          }
-        >
-          <option value="" disabled>
-            Select a tone
-          </option>
-          <option value="lifestyle">Lifestyle</option>
-          <option value="thriller">Thriller</option>
-          <option value="comedy">Comedy</option>
-        </Select>
+        <div className="flex gap-6">
+          {tones.map((tone) => (
+            <button
+              key={tone.value}
+              type="button"
+              onClick={() => onChange({ tone: tone.value })}
+              className={cn(
+                "text-sm transition-colors",
+                data.tone === tone.value
+                  ? "text-accent"
+                  : "text-text-secondary hover:text-text-primary",
+              )}
+            >
+              {tone.label}
+            </button>
+          ))}
+        </div>
       </Field>
 
       <Field label="Target audience">
@@ -68,8 +81,10 @@ export function BrandInputForm({ data, onChange }: BrandInputFormProps) {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="flex flex-col gap-2">
-      <label className="text-sm text-text-secondary">{label}</label>
+    <div className="flex flex-col gap-3">
+      <label className="text-xs font-medium uppercase tracking-widest text-text-secondary">
+        {label}
+      </label>
       {children}
     </div>
   );

@@ -1,27 +1,58 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
+import { VerticalPlayer } from "@/components/player/VerticalPlayer";
+import { VariantSwitcher } from "@/components/player/VariantSwitcher";
 import { buttonVariants } from "@/components/ui/Button";
-import Link from "next/link";
+import { VARIANT_DEFINITIONS, type VariantLabel } from "@/lib/kling";
 
-// The VerticalPlayer + VariantSwitcher smoke test that lived here (Day 11-12)
-// is now the real Step 5 of the wizard (src/components/wizard/PrototypeViewer.tsx).
-// A public no-auth version of this page (with its own canned demo session)
-// is future work — for now this just points to the real flow.
+// Public showcase demo — no real brand session behind it (no auth, no Kling
+// spend), so it plays fixed public sample clips instead of generated video.
+// Reuses VARIANT_DEFINITIONS from lib/kling.ts for the one-line explanation
+// under the player, so this copy can't drift out of sync with what the real
+// A/B/C variants actually do.
+const DEMO_CLIPS: Record<VariantLabel, string> = {
+  A: "https://www.w3schools.com/html/mov_bbb.mp4",
+  B: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+  C: "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/friday.mp4",
+};
+
 export default function DemoPage() {
+  const [activeLabel, setActiveLabel] = useState<VariantLabel>("A");
+  const active = VARIANT_DEFINITIONS.find((v) => v.label === activeLabel)!;
+
   return (
     <div className="flex flex-1 flex-col">
       <Header />
-      <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center justify-center gap-4 px-6 py-24 text-center">
-        <h1 className="font-[family-name:var(--font-display)] text-xl font-bold text-text-primary">
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col items-center gap-8 px-6 py-16">
+        <h1 className="font-[family-name:var(--font-display)] text-center text-5xl leading-[0.95] text-text-primary">
           Experience the Brand Prototype
         </h1>
-        <p className="max-w-xs text-sm text-text-secondary">
-          The Brand Prototype viewer (vertical player + A/B/C variant switcher)
-          is live inside the Platform wizard now. A standalone public demo
-          session lands here later.
-        </p>
-        <Link href="/platform/new" className={buttonVariants()}>
-          Try it in the Platform
+
+        <div className="flex w-full max-w-[380px] flex-col gap-4">
+          <VerticalPlayer
+            key={activeLabel}
+            videoUrl={DEMO_CLIPS[activeLabel]}
+            label={`Variant ${activeLabel} sample`}
+          />
+          <VariantSwitcher
+            variants={VARIANT_DEFINITIONS}
+            activeLabel={activeLabel}
+            onSelect={setActiveLabel}
+          />
+          <p className="text-sm leading-6 text-text-secondary">
+            {active.modifier}
+          </p>
+        </div>
+
+        <Link
+          href="/platform/new"
+          className={buttonVariants({ variant: "accent" })}
+        >
+          Create Your Own Prototype <span aria-hidden="true">→</span>
         </Link>
       </main>
       <Footer />

@@ -166,7 +166,7 @@ export function VerticalPlayer({
           showControls ? "opacity-100" : "pointer-events-none opacity-0"
         }`}
       >
-        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm">
+        <div className="flex h-14 w-14 items-center justify-center bg-black/50 text-white">
           {isPlaying ? <PauseIcon /> : <PlayIcon />}
         </div>
       </div>
@@ -176,7 +176,7 @@ export function VerticalPlayer({
         type="button"
         onClick={toggleMute}
         aria-label={isMuted ? "Unmute" : "Mute"}
-        className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm transition-colors hover:bg-black/70"
+        className="absolute bottom-3 right-3 flex h-8 w-8 items-center justify-center bg-black/50 text-white transition-colors hover:bg-black/70"
       >
         {isMuted ? <MutedIcon /> : <UnmutedIcon />}
       </button>

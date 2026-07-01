@@ -36,15 +36,15 @@ export function LoadingState({ text, stages, note }: LoadingStateProps) {
     <div className="flex flex-1 flex-col items-center justify-center gap-5 py-16">
       <div className="flex items-center gap-1.5">
         <span
-          className="h-2 w-2 animate-pulse rounded-full bg-accent"
+          className="h-2 w-2 animate-pulse bg-accent"
           style={{ animationDelay: "0ms" }}
         />
         <span
-          className="h-2 w-2 animate-pulse rounded-full bg-accent"
+          className="h-2 w-2 animate-pulse bg-accent"
           style={{ animationDelay: "200ms" }}
         />
         <span
-          className="h-2 w-2 animate-pulse rounded-full bg-accent"
+          className="h-2 w-2 animate-pulse bg-accent"
           style={{ animationDelay: "400ms" }}
         />
       </div>

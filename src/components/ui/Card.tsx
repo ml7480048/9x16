@@ -13,12 +13,12 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
         className={cn(
           "rounded-card border border-border p-6 transition-colors duration-150",
           elevated ? "bg-surface-elevated" : "bg-surface",
-          className
+          className,
         )}
         {...props}
       />
     );
-  }
+  },
 );
 
 Card.displayName = "Card";

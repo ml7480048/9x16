@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json(
       { error: "Request body must be valid JSON." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -34,14 +34,14 @@ export async function POST(request: NextRequest) {
   if (missing.length > 0) {
     return NextResponse.json(
       { error: `Missing required field(s): ${missing.join(", ")}` },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   if (!Array.isArray(body.scenes) || body.scenes.length === 0) {
     return NextResponse.json(
       { error: "Missing required field: scenes (non-empty array)." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -54,14 +54,16 @@ export async function POST(request: NextRequest) {
         audience: body.audience!,
         campaignGoal: body.campaignGoal!,
       },
-      body.scenes
+      body.scenes,
     );
 
     return NextResponse.json({ script });
   } catch (error) {
     console.error("[/api/generate-script] failed:", error);
     const message =
-      error instanceof Error ? error.message : "Unknown error generating script.";
+      error instanceof Error
+        ? error.message
+        : "Unknown error generating script.";
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

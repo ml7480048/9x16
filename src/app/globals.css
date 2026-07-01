@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
 @theme inline {
-  /* 9×16 design tokens — dark premium, do not change without explicit instruction */
+  /* 9×16 design tokens — A24-minimalist (2026-07), do not change without
+     explicit instruction. Sharp corners everywhere, no shadows/glows/
+     gradients, accent used sparingly (max one moment per screen). */
   --color-background: #0a0a0a;
   --color-surface: #111111;
   --color-surface-elevated: #1a1a1a;
@@ -11,11 +13,11 @@
   --color-accent: #ff3c00;
   --color-accent-hover: #e63500;
 
-  --radius-card: 8px;
-  --radius-input: 4px;
+  --radius-card: 0px;
+  --radius-input: 0px;
   --radius-button: 0px;
 
-  --font-display: var(--font-space-grotesk);
+  --font-display: var(--font-bebas-neue);
   --font-body: var(--font-dm-sans);
 }
 

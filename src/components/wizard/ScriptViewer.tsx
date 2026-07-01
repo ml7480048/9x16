@@ -112,7 +112,7 @@ export function ScriptViewer({
 
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="font-[family-name:var(--font-display)] text-lg font-bold text-text-primary">
+      <h2 className="font-[family-name:var(--font-display)] text-3xl leading-[0.95] text-text-primary">
         {script.title}
       </h2>
       <div className="flex flex-col">

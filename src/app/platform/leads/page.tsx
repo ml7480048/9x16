@@ -7,7 +7,7 @@ export default async function LeadsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="font-[family-name:var(--font-display)] text-lg font-bold text-text-primary">
+      <h1 className="font-[family-name:var(--font-display)] text-3xl leading-[0.95] text-text-primary">
         Leads ({leads.length})
       </h1>
       {leads.length === 0 ? (

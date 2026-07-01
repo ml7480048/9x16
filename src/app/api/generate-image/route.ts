@@ -13,14 +13,14 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json(
       { error: "Request body must be valid JSON." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   if (!body.description) {
     return NextResponse.json(
       { error: "Missing required field: description." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
@@ -30,7 +30,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[/api/generate-image] failed:", error);
     const message =
-      error instanceof Error ? error.message : "Unknown error generating image.";
+      error instanceof Error
+        ? error.message
+        : "Unknown error generating image.";
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }

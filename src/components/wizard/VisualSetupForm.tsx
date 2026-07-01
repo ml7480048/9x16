@@ -60,9 +60,7 @@ export function VisualSetupForm({ data, onChange }: VisualSetupFormProps) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <label className="text-sm text-text-secondary">
-          Narrative format
-        </label>
+        <label className="text-sm text-text-secondary">Narrative format</label>
         <div className="flex flex-col gap-3">
           {formats.map((format) => (
             <SelectableCard
@@ -98,7 +96,7 @@ function SelectableCard({
       onClick={onClick}
       className={cn(
         "flex cursor-pointer flex-col gap-1 transition-colors",
-        selected ? "!border-accent" : "hover:border-text-secondary"
+        selected ? "!border-accent" : "hover:border-text-secondary",
       )}
     >
       {children}

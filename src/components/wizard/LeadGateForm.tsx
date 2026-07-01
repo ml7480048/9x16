@@ -43,7 +43,7 @@ export function LeadGateForm() {
   return (
     <div className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center gap-6 py-16">
       <div className="flex flex-col gap-2 text-center">
-        <h1 className="font-[family-name:var(--font-display)] text-xl font-bold text-text-primary">
+        <h1 className="font-[family-name:var(--font-display)] text-4xl leading-[0.95] text-text-primary">
           Before we start
         </h1>
         <p className="text-sm leading-6 text-text-secondary">
@@ -78,7 +78,12 @@ export function LeadGateForm() {
           />
         </Field>
         {error && <p className="text-xs text-red-400">{error}</p>}
-        <Button type="submit" disabled={submitting} className="mt-2">
+        <Button
+          type="submit"
+          variant="accent"
+          disabled={submitting}
+          className="mt-2"
+        >
           {submitting ? "Starting..." : "Start my prototype"}
         </Button>
       </form>

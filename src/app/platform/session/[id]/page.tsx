@@ -6,8 +6,8 @@ export default async function SessionDetailPage({
   const { id } = await params;
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-2 py-24 text-center">
-      <h1 className="font-[family-name:var(--font-display)] text-xl font-bold text-text-primary">
+    <div className="flex flex-1 flex-col justify-center gap-2 px-6 py-24">
+      <h1 className="font-[family-name:var(--font-display)] text-4xl leading-[0.95] text-text-primary">
         Session {id}
       </h1>
       <p className="max-w-xs text-sm text-text-secondary">

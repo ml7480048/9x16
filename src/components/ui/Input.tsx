@@ -3,22 +3,24 @@ import { cn } from "@/lib/utils";
 
 export type InputProps = InputHTMLAttributes<HTMLInputElement>;
 
+// A24-minimalist pass (2026-07): underline-only, no box — transparent
+// background, just a bottom border that turns accent on focus.
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, ...props }, ref) => {
     return (
       <input
         ref={ref}
         className={cn(
-          "h-11 w-full rounded-input border border-border bg-surface px-4 text-base sm:text-sm text-text-primary",
+          "w-full border-b border-border bg-transparent py-2 text-base sm:text-sm text-text-primary",
           "placeholder:text-text-secondary transition-colors duration-150",
           "focus:outline-none focus:border-accent",
           "disabled:opacity-40 disabled:pointer-events-none",
-          className
+          className,
         )}
         {...props}
       />
     );
-  }
+  },
 );
 
 Input.displayName = "Input";

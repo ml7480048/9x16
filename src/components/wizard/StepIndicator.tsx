@@ -1,8 +1,3 @@
-"use client";
-
-import { useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
-
 const steps = [
   "Brand Input",
   "Visual Setup",
@@ -13,75 +8,29 @@ const steps = [
 
 interface StepIndicatorProps {
   currentStep: number;
-  /** Called when a completed step is tapped, so users can jump back without
-   * repeatedly hitting the Back button. Only completed steps are clickable —
-   * the current step and future ones (which may not have valid data yet)
-   * are not. */
-  onStepSelect?: (step: number) => void;
 }
 
-export function StepIndicator({
-  currentStep,
-  onStepSelect,
-}: StepIndicatorProps) {
-  const activeRef = useRef<HTMLLIElement>(null);
-
-  // Auto-scroll the active step into view — without this, the bar only ever
-  // shows whatever fit on screen at Step 1, so by Step 5 the active step (and
-  // its "generating..." context) can be scrolled off to the right, invisible.
-  useEffect(() => {
-    activeRef.current?.scrollIntoView({
-      behavior: "smooth",
-      inline: "center",
-      block: "nearest",
-    });
-  }, [currentStep]);
+// A24-minimalist pass (2026-07): no circles, no per-step click targets —
+// a single thin progress line with the current step's name below it in
+// small caps. Matches the "one calm question at a time" wizard redesign;
+// jumping between steps is Back/Next only now.
+export function StepIndicator({ currentStep }: StepIndicatorProps) {
+  const progress = (currentStep / steps.length) * 100;
 
   return (
-    <ol className="flex items-center gap-2 overflow-x-auto pb-1">
-      {steps.map((label, i) => {
-        const stepNumber = i + 1;
-        const active = stepNumber === currentStep;
-        const done = stepNumber < currentStep;
-        const clickable = done && !!onStepSelect;
-
-        return (
-          <li
-            key={label}
-            ref={active ? activeRef : undefined}
-            className="flex shrink-0 items-center gap-2"
-          >
-            <button
-              type="button"
-              disabled={!clickable}
-              onClick={() => clickable && onStepSelect(stepNumber)}
-              className={cn(
-                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
-                done && "border-accent bg-accent text-white",
-                active && !done && "border-accent text-accent",
-                !active && !done && "border-border text-text-secondary",
-                clickable && "cursor-pointer hover:opacity-80",
-                !clickable && "cursor-default",
-              )}
-            >
-              {stepNumber}
-            </button>
-            <span
-              onClick={() => clickable && onStepSelect(stepNumber)}
-              className={cn(
-                "whitespace-nowrap text-xs",
-                active ? "text-text-primary" : "text-text-secondary",
-                clickable && "cursor-pointer hover:text-text-primary",
-              )}
-            >
-              {label}
-            </span>
-            {stepNumber !== steps.length && (
-              <div className="h-px w-4 bg-border" />
-            )}
-          </li>
-        );
-      })}
-    </ol>
+    <div className="flex flex-col gap-3">
+      <div className="relative h-px w-full bg-border">
+        <div
+          className="absolute left-0 top-0 h-px bg-accent transition-all duration-300 ease-out"
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <span className="text-xs font-medium uppercase tracking-widest text-text-secondary">
+        {String(currentStep).padStart(2, "0")} /{" "}
+        {String(steps.length).padStart(2, "0")}
+        {" · "}
+        {steps[currentStep - 1]}
+      </span>
+    </div>
   );
 }

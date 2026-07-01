@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { Button, buttonVariants } from "@/components/ui/Button";
 import { StepIndicator } from "./StepIndicator";
 import { BrandInputForm } from "./BrandInputForm";
 import { VisualSetupForm } from "./VisualSetupForm";
@@ -134,7 +134,7 @@ export function Wizard() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 py-10">
-      <StepIndicator currentStep={step} onStepSelect={setStep} />
+      <StepIndicator currentStep={step} />
 
       {step === 1 && <BrandInputForm data={data} onChange={update} />}
       {step === 2 && <VisualSetupForm data={data} onChange={update} />}
@@ -170,14 +170,19 @@ export function Wizard() {
       )}
 
       <div className="mt-auto flex justify-between gap-3">
-        <Button
-          variant="ghost"
+        {/* Back points the other way, so it gets a manual ← instead of the
+            Button component's built-in → (which always trails forward). */}
+        <button
+          type="button"
           onClick={() => setStep((s) => Math.max(1, s - 1))}
           disabled={step === 1}
+          className={buttonVariants()}
         >
+          <span aria-hidden="true">←</span>
           Back
-        </Button>
+        </button>
         <Button
+          variant="accent"
           onClick={() => setStep((s) => Math.min(TOTAL_STEPS, s + 1))}
           disabled={!canGoNext}
         >

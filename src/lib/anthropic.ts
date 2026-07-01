@@ -55,7 +55,7 @@ async function callClaude(prompt: string, maxTokens = 1024): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error(
-      "ANTHROPIC_API_KEY is not set — add it to .env.local (and Vercel env vars for production)."
+      "ANTHROPIC_API_KEY is not set — add it to .env.local (and Vercel env vars for production).",
     );
   }
 
@@ -76,7 +76,7 @@ async function callClaude(prompt: string, maxTokens = 1024): Promise<string> {
   if (!response.ok) {
     const errorBody = await response.text();
     throw new Error(
-      `Anthropic API error (${response.status}): ${errorBody.slice(0, 500)}`
+      `Anthropic API error (${response.status}): ${errorBody.slice(0, 500)}`,
     );
   }
 
@@ -87,7 +87,7 @@ async function callClaude(prompt: string, maxTokens = 1024): Promise<string> {
 
   if (data.stop_reason === "max_tokens") {
     throw new Error(
-      "Claude response was cut off (hit max_tokens) before finishing — the JSON came back incomplete. Retry, or raise maxTokens for this call."
+      "Claude response was cut off (hit max_tokens) before finishing — the JSON came back incomplete. Retry, or raise maxTokens for this call.",
     );
   }
 
@@ -111,7 +111,9 @@ function parseJson<T>(raw: string): T {
   try {
     return JSON.parse(cleaned) as T;
   } catch {
-    throw new Error(`Failed to parse JSON from Claude response: ${cleaned.slice(0, 300)}`);
+    throw new Error(
+      `Failed to parse JSON from Claude response: ${cleaned.slice(0, 300)}`,
+    );
   }
 }
 
@@ -143,7 +145,13 @@ function mockSceneDescriptions(brand: BrandInput): SceneDraft[] {
     id: `mock-scene-${i + 1}`,
     order: i + 1,
     description,
-    visualMood: ["warm morning light", "handheld, intimate", "soft window light", "golden hour", "cool blue tones"][i],
+    visualMood: [
+      "warm morning light",
+      "handheld, intimate",
+      "soft window light",
+      "golden hour",
+      "cool blue tones",
+    ][i],
   }));
 }
 
@@ -175,7 +183,7 @@ function mockFormatMatch(brand: BrandInput): FormatMatch {
 
 /** Step 3 — generates 4-6 scene descriptions for the episode prototype. */
 export async function generateSceneDescriptions(
-  brand: BrandInput
+  brand: BrandInput,
 ): Promise<SceneDraft[]> {
   if (isMockMode()) {
     return mockSceneDescriptions(brand);
@@ -200,7 +208,7 @@ Respond with ONLY a raw JSON array (no markdown fences, no commentary), where ea
 /** Step 4 — generates the episode script with brand integration, scene by scene. */
 export async function generateScript(
   brand: BrandInput,
-  scenes: SceneDraft[]
+  scenes: SceneDraft[],
 ): Promise<EpisodeScript> {
   if (isMockMode()) {
     return mockScript(brand, scenes);

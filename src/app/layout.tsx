@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
-import { DM_Sans, Space_Grotesk } from "next/font/google";
+import { DM_Sans, Bebas_Neue } from "next/font/google";
 import "./globals.css";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+// A24-minimalist design pass (2026-07): Bebas Neue for all headlines —
+// condensed, tight, no letter-spacing needed since the font itself is
+// already dense. Replaces Space Grotesk.
+const bebasNeue = Bebas_Neue({
+  variable: "--font-bebas-neue",
   subsets: ["latin"],
-  weight: ["500", "700"],
+  weight: "400",
 });
 
 const dmSans = DM_Sans({
@@ -27,7 +30,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${dmSans.variable} h-full dark antialiased`}
+      className={`${bebasNeue.variable} ${dmSans.variable} h-full dark antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background text-text-primary">
         {children}
