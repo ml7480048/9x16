@@ -189,13 +189,22 @@ export function StoryboardGrid({
                   <div className="absolute inset-0 animate-pulse bg-surface" />
                 )}
                 {image?.error && (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 overflow-hidden p-2 text-center">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 overflow-hidden p-2 text-center">
                     <span className="text-[10px] text-text-secondary">
                       Image failed to generate
                     </span>
                     <span className="line-clamp-4 text-[9px] leading-tight text-text-secondary/70">
                       {image.error}
                     </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        fetchImageFor(scene.id, scene.description)
+                      }
+                      className="text-[10px] font-medium text-accent underline decoration-dotted"
+                    >
+                      Retry
+                    </button>
                   </div>
                 )}
               </div>
