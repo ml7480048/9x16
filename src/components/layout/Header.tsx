@@ -1,8 +1,8 @@
 import Link from "next/link";
 
 const navItems = [
-  { label: "Platform", href: "/platform" },
-  { label: "Player", href: "/player" },
+  { label: "AI Prototype", href: "/platform" },
+  { label: "Verticals", href: "/player" },
   { label: "Contacts", href: "/contacts" },
   { label: "Team", href: "/team" },
 ];

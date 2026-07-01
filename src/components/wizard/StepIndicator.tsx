@@ -8,7 +8,7 @@ const steps = [
   "Visual Setup",
   "Storyboard",
   "Detailed Script",
-  "Preview",
+  "Money Shot",
 ];
 
 interface StepIndicatorProps {

@@ -23,6 +23,12 @@ interface StoryboardGridProps {
   // Back to this step doesn't burn Kling credits re-generating every image.
   images: SceneImages;
   onImagesChange: Dispatch<SetStateAction<SceneImages>>;
+  // Which scene is the "money shot" the Step 5 Brand Prototype variants get
+  // generated from. Explicit, client-chosen — previously this defaulted to
+  // "whichever scene's image finished first," which had nothing to do with
+  // which scene actually sells the product.
+  heroSceneId: string | null;
+  onHeroSceneChange: (sceneId: string) => void;
 }
 
 export function StoryboardGrid({
@@ -31,6 +37,8 @@ export function StoryboardGrid({
   onScenesReady,
   images,
   onImagesChange,
+  heroSceneId,
+  onHeroSceneChange,
 }: StoryboardGridProps) {
   const [loading, setLoading] = useState(!scenes);
   const [error, setError] = useState<string | null>(null);
@@ -121,6 +129,16 @@ export function StoryboardGrid({
     });
   }, [scenes, fetchImageFor]);
 
+  // Default the money shot to the first scene with a successful image, so
+  // there's always a sensible choice without forcing a manual pick — but
+  // only until the client explicitly overrides it (guarded by `heroSceneId`
+  // already being set), via the "Set as Money Shot" button on other cards.
+  useEffect(() => {
+    if (heroSceneId || !scenes) return;
+    const firstReady = scenes.find((scene) => images[scene.id]?.url);
+    if (firstReady) onHeroSceneChange(firstReady.id);
+  }, [scenes, images, heroSceneId, onHeroSceneChange]);
+
   function startEdit(scene: SceneDraft) {
     setEditingId(scene.id);
     setDraftText(scene.description);
@@ -171,11 +189,24 @@ export function StoryboardGrid({
       <div className="grid grid-cols-2 gap-3">
         {scenes.map((scene) => {
           const image = images[scene.id];
+          const isHero = scene.id === heroSceneId;
           return (
-            <Card key={scene.id} className="flex flex-col gap-2">
-              <span className="text-xs font-semibold text-accent">
-                Scene {scene.order}
-              </span>
+            <Card
+              key={scene.id}
+              className={
+                "flex flex-col gap-2" + (isHero ? " !border-accent" : "")
+              }
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-accent">
+                  Scene {scene.order}
+                </span>
+                {isHero && (
+                  <span className="rounded-input bg-accent px-2 py-0.5 text-[10px] font-semibold text-white">
+                    ★ Money Shot
+                  </span>
+                )}
+              </div>
               <div className="relative aspect-[9/16] w-full overflow-hidden rounded-input bg-surface-elevated">
                 {image?.url && (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -198,9 +229,7 @@ export function StoryboardGrid({
                     </span>
                     <button
                       type="button"
-                      onClick={() =>
-                        fetchImageFor(scene.id, scene.description)
-                      }
+                      onClick={() => fetchImageFor(scene.id, scene.description)}
                       className="text-[10px] font-medium text-accent underline decoration-dotted"
                     >
                       Retry
@@ -239,13 +268,24 @@ export function StoryboardGrid({
                   <p className="text-xs leading-5 text-text-secondary">
                     {scene.description}
                   </p>
-                  <button
-                    type="button"
-                    onClick={() => startEdit(scene)}
-                    className="self-start text-xs text-text-secondary underline decoration-dotted transition-colors hover:text-text-primary"
-                  >
-                    Edit
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(scene)}
+                      className="text-xs text-text-secondary underline decoration-dotted transition-colors hover:text-text-primary"
+                    >
+                      Edit
+                    </button>
+                    {image?.url && !isHero && (
+                      <button
+                        type="button"
+                        onClick={() => onHeroSceneChange(scene.id)}
+                        className="text-xs text-text-secondary underline decoration-dotted transition-colors hover:text-accent"
+                      >
+                        Set as Money Shot
+                      </button>
+                    )}
+                  </div>
                 </>
               )}
             </Card>

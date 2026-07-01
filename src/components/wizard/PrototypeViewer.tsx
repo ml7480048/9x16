@@ -15,6 +15,10 @@ const hasAnyFailure = (variants: VariantResult[]) =>
 interface PrototypeViewerProps {
   scenes: SceneDraft[];
   images: SceneImages;
+  /** Client-chosen "money shot" scene (set on Storyboard) — the one
+   * variants get generated from. Falls back to the first scene with a
+   * successfully generated image if nothing was explicitly chosen yet. */
+  heroSceneId: string | null;
   variants: VariantResult[] | null;
   onVariantsReady: (variants: VariantResult[]) => void;
   activeLabel: VariantLabel;
@@ -22,15 +26,16 @@ interface PrototypeViewerProps {
 }
 
 /**
- * Step 5 — Prototype Viewer (dev spec 4.1). Generates the 3 Brand Prototype
- * variants for one hero scene (first scene with a successfully generated
- * image), then lets the client switch between them. Variants are lifted to
- * Wizard state (like `images`/`scenes`) so navigating Back/Next doesn't
- * re-trigger 3 more Kling video generations.
+ * Step 5 — Prototype Viewer / Money Shot (dev spec 4.1). Generates the 3
+ * Brand Prototype variants for the chosen money-shot scene, then lets the
+ * client switch between them. Variants are lifted to Wizard state (like
+ * `images`/`scenes`) so navigating Back/Next doesn't re-trigger 3 more Kling
+ * video generations.
  */
 export function PrototypeViewer({
   scenes,
   images,
+  heroSceneId,
   variants,
   onVariantsReady,
   activeLabel,
@@ -44,8 +49,13 @@ export function PrototypeViewer({
     text: string;
   } | null>(null);
 
-  const heroScene = scenes.find((scene) => images[scene.id]?.url);
+  const explicitHeroScene = heroSceneId
+    ? scenes.find((scene) => scene.id === heroSceneId && images[scene.id]?.url)
+    : undefined;
+  const heroScene =
+    explicitHeroScene ?? scenes.find((scene) => images[scene.id]?.url);
   const heroImageUrl = heroScene ? images[heroScene.id]?.url : undefined;
+  const usedFallback = !!heroScene && !explicitHeroScene;
 
   const runFetch = useCallback(() => {
     if (!heroScene || !heroImageUrl) {
@@ -166,6 +176,12 @@ export function PrototypeViewer({
 
   return (
     <div className="flex flex-col gap-4">
+      {usedFallback && heroScene && (
+        <p className="text-center text-xs text-text-secondary">
+          Using Scene {heroScene.order} as the money shot (no explicit choice
+          made) — go back to Storyboard to pick a different one.
+        </p>
+      )}
       <div className="mx-auto w-full max-w-[280px]">
         <VerticalPlayer
           key={active.label + (active.videoUrl ?? "")}

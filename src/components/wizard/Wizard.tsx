@@ -27,6 +27,7 @@ interface PersistedState {
   images: SceneImages;
   variants: VariantResult[] | null;
   activeVariantLabel: VariantLabel;
+  heroSceneId: string | null;
 }
 
 function loadPersisted(): PersistedState | null {
@@ -49,6 +50,7 @@ export function Wizard() {
   const [variants, setVariants] = useState<VariantResult[] | null>(null);
   const [activeVariantLabel, setActiveVariantLabel] =
     useState<VariantLabel>("A");
+  const [heroSceneId, setHeroSceneId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
   // Restore persisted progress once, after mount. Deliberately not done via a
@@ -67,6 +69,7 @@ export function Wizard() {
         setImages(persisted.images ?? {});
         setVariants(persisted.variants ?? null);
         setActiveVariantLabel(persisted.activeVariantLabel ?? "A");
+        setHeroSceneId(persisted.heroSceneId ?? null);
       }
       setHydrated(true);
     });
@@ -85,6 +88,7 @@ export function Wizard() {
       images,
       variants,
       activeVariantLabel,
+      heroSceneId,
     };
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [
@@ -96,6 +100,7 @@ export function Wizard() {
     images,
     variants,
     activeVariantLabel,
+    heroSceneId,
   ]);
 
   function update(partial: Partial<WizardFormData>) {
@@ -137,6 +142,8 @@ export function Wizard() {
           onScenesReady={setScenes}
           images={images}
           onImagesChange={setImages}
+          heroSceneId={heroSceneId}
+          onHeroSceneChange={setHeroSceneId}
         />
       )}
       {step === 4 && scenes && (
@@ -151,6 +158,7 @@ export function Wizard() {
         <PrototypeViewer
           scenes={scenes}
           images={images}
+          heroSceneId={heroSceneId}
           variants={variants}
           onVariantsReady={setVariants}
           activeLabel={activeVariantLabel}
