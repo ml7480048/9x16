@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { generateVideoFromImage, VARIANT_DEFINITIONS } from "@/lib/kling";
 import type { IntegrationStyle } from "@/lib/kling";
 
+// See generate-variants/route.ts for why this needs to exceed kling.ts's
+// POLL_TIMEOUT_MS (270s).
+export const maxDuration = 290;
+
 interface GenerateVideoBody {
   imageUrl?: string;
   description?: string;

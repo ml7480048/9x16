@@ -28,7 +28,13 @@
 
 const BASE_URL = "https://api-singapore.klingai.com";
 const POLL_INTERVAL_MS = 3000;
-const POLL_TIMEOUT_MS = 120_000;
+// 270s (4.5 min) — raised from 120s after a real test hit that ceiling.
+// Bounded by Vercel's function duration limit: Hobby/Pro both default to
+// 300s max with Fluid Compute (verified at vercel.com/docs/functions/
+// configuring-functions/duration, 2026-07-01), so this leaves ~30s buffer
+// for request/response overhead. The API routes that call this also set
+// `export const maxDuration` explicitly to match.
+const POLL_TIMEOUT_MS = 270_000;
 
 function isMockMode(): boolean {
   const key = process.env.KLING_API_KEY;
@@ -87,7 +93,9 @@ async function pollTask(
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
-  throw new Error("Kling generation timed out after 120 seconds.");
+  throw new Error(
+    `Kling generation timed out after ${POLL_TIMEOUT_MS / 1000} seconds.`,
+  );
 }
 
 /** Branded 720x1280 placeholder — used only in mock mode. */

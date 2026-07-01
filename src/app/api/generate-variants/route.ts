@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateBrandVariants } from "@/lib/kling";
 
+// Kling video generation can take a few minutes; must exceed kling.ts's own
+// POLL_TIMEOUT_MS (270s) or Vercel would kill the function first with a
+// generic timeout instead of our own clear error. 290s stays under the 300s
+// ceiling shared by Hobby and Pro plans with Fluid Compute.
+export const maxDuration = 290;
+
 interface GenerateVariantsBody {
   imageUrl?: string;
   description?: string;

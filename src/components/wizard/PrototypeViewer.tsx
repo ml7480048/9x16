@@ -98,7 +98,7 @@ export function PrototypeViewer({
           "Generating Direct variant...",
           "Almost ready...",
         ]}
-        note="This can take up to 2-3 minutes — 3 video variants are generated at once."
+        note="This can take up to 4-5 minutes — 3 video variants are generated at once."
       />
     );
 

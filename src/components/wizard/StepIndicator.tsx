@@ -11,7 +11,19 @@ const steps = [
   "Preview",
 ];
 
-export function StepIndicator({ currentStep }: { currentStep: number }) {
+interface StepIndicatorProps {
+  currentStep: number;
+  /** Called when a completed step is tapped, so users can jump back without
+   * repeatedly hitting the Back button. Only completed steps are clickable —
+   * the current step and future ones (which may not have valid data yet)
+   * are not. */
+  onStepSelect?: (step: number) => void;
+}
+
+export function StepIndicator({
+  currentStep,
+  onStepSelect,
+}: StepIndicatorProps) {
   const activeRef = useRef<HTMLLIElement>(null);
 
   // Auto-scroll the active step into view — without this, the bar only ever
@@ -31,6 +43,7 @@ export function StepIndicator({ currentStep }: { currentStep: number }) {
         const stepNumber = i + 1;
         const active = stepNumber === currentStep;
         const done = stepNumber < currentStep;
+        const clickable = done && !!onStepSelect;
 
         return (
           <li
@@ -38,20 +51,27 @@ export function StepIndicator({ currentStep }: { currentStep: number }) {
             ref={active ? activeRef : undefined}
             className="flex shrink-0 items-center gap-2"
           >
-            <div
+            <button
+              type="button"
+              disabled={!clickable}
+              onClick={() => clickable && onStepSelect(stepNumber)}
               className={cn(
                 "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors",
                 done && "border-accent bg-accent text-white",
                 active && !done && "border-accent text-accent",
                 !active && !done && "border-border text-text-secondary",
+                clickable && "cursor-pointer hover:opacity-80",
+                !clickable && "cursor-default",
               )}
             >
               {stepNumber}
-            </div>
+            </button>
             <span
+              onClick={() => clickable && onStepSelect(stepNumber)}
               className={cn(
                 "whitespace-nowrap text-xs",
                 active ? "text-text-primary" : "text-text-secondary",
+                clickable && "cursor-pointer hover:text-text-primary",
               )}
             >
               {label}

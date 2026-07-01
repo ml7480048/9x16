@@ -126,7 +126,7 @@ export function Wizard() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 py-10">
-      <StepIndicator currentStep={step} />
+      <StepIndicator currentStep={step} onStepSelect={setStep} />
 
       {step === 1 && <BrandInputForm data={data} onChange={update} />}
       {step === 2 && <VisualSetupForm data={data} onChange={update} />}
