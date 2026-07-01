@@ -38,6 +38,11 @@ export function PrototypeViewer({
 }: PrototypeViewerProps) {
   const [loading, setLoading] = useState(!variants);
   const [error, setError] = useState<string | null>(null);
+  const [checkingLabel, setCheckingLabel] = useState<VariantLabel | null>(null);
+  const [checkMessage, setCheckMessage] = useState<{
+    label: VariantLabel;
+    text: string;
+  } | null>(null);
 
   const heroScene = scenes.find((scene) => images[scene.id]?.url);
   const heroImageUrl = heroScene ? images[heroScene.id]?.url : undefined;
@@ -87,6 +92,58 @@ export function PrototypeViewer({
     runFetch();
   }, [runFetch]);
 
+  // "Check again" — asks Kling whether a task we previously gave up polling
+  // on has actually finished, WITHOUT creating a new task (no extra credit
+  // spend). Only shown for variants where the failure was our own timeout
+  // (taskId set), not a genuine Kling failure.
+  const handleCheckStatus = useCallback(
+    (variant: VariantResult) => {
+      if (!variant.taskId || !variants) return;
+      setCheckingLabel(variant.label);
+      setCheckMessage(null);
+      fetch("/api/check-video-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId: variant.taskId }),
+      })
+        .then(async (res) => {
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error ?? "Failed to check status.");
+          if (data.status === "succeed" && data.videoUrl) {
+            const updated = variants.map((v) =>
+              v.label === variant.label
+                ? {
+                    ...v,
+                    videoUrl: data.videoUrl as string,
+                    error: undefined,
+                    taskId: undefined,
+                  }
+                : v,
+            );
+            onVariantsReady(updated);
+          } else if (data.status === "processing") {
+            setCheckMessage({
+              label: variant.label,
+              text: "Still processing — try again in a moment.",
+            });
+          } else {
+            setCheckMessage({
+              label: variant.label,
+              text: data.message ?? "This variant failed.",
+            });
+          }
+        })
+        .catch((err) => {
+          setCheckMessage({
+            label: variant.label,
+            text: err instanceof Error ? err.message : "Something went wrong.",
+          });
+        })
+        .finally(() => setCheckingLabel(null));
+    },
+    [variants, onVariantsReady],
+  );
+
   if (loading)
     return (
       <LoadingState
@@ -117,10 +174,31 @@ export function PrototypeViewer({
           label={`Variant ${active.label} preview`}
         />
         {active.error && (
-          <p className="mt-2 text-center text-xs text-text-secondary">
-            This variant didn&apos;t finish generating ({active.error}) —
-            showing the still image instead.
-          </p>
+          <div className="mt-2 flex flex-col items-center gap-1 text-center">
+            <p className="text-xs text-text-secondary">
+              This variant didn&apos;t finish generating ({active.error}) —
+              showing the still image instead.
+            </p>
+            {active.taskId && (
+              <button
+                type="button"
+                onClick={() => handleCheckStatus(active)}
+                disabled={checkingLabel === active.label}
+                className="text-xs font-medium text-accent underline decoration-dotted disabled:opacity-50"
+              >
+                {checkingLabel === active.label
+                  ? "Checking..."
+                  : "Check again (no new credit spent)"}
+              </button>
+            )}
+            {checkMessage &&
+              checkMessage.label === active.label &&
+              checkingLabel === null && (
+                <p className="text-xs text-text-secondary/70">
+                  {checkMessage.text}
+                </p>
+              )}
+          </div>
         )}
       </div>
       <VariantSwitcher

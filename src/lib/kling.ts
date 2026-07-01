@@ -62,6 +62,23 @@ interface KlingTaskResponse {
   };
 }
 
+/**
+ * Thrown when our own poll loop gives up before Kling finishes — NOT the
+ * same as the task actually failing. Carries `taskId` so callers can check
+ * back later (via `checkTaskStatus`) instead of paying for a fresh
+ * generation. Learned the hard way (2026-07-01): a real test showed 6 "timed
+ * out" video tasks had all actually succeeded on Kling's side within 2.4-3.6
+ * minutes — we just weren't listening anymore by the time they finished.
+ */
+export class KlingTimeoutError extends Error {
+  taskId: string;
+  constructor(taskId: string, timeoutSeconds: number) {
+    super(`Kling generation timed out after ${timeoutSeconds} seconds.`);
+    this.name = "KlingTimeoutError";
+    this.taskId = taskId;
+  }
+}
+
 async function pollTask(
   taskUrlBase: string,
   taskId: string,
@@ -93,9 +110,52 @@ async function pollTask(
     await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
   }
 
-  throw new Error(
-    `Kling generation timed out after ${POLL_TIMEOUT_MS / 1000} seconds.`,
-  );
+  throw new KlingTimeoutError(taskId, POLL_TIMEOUT_MS / 1000);
+}
+
+/**
+ * One-shot status check for a video task we already gave up polling on —
+ * does NOT create a new task or spend a new credit. Use after a
+ * KlingTimeoutError to see if the video finished after all.
+ */
+export async function checkVideoTaskStatus(taskId: string): Promise<{
+  status: "succeed" | "processing" | "failed";
+  videoUrl?: string;
+  message?: string;
+}> {
+  const response = await fetch(`${BASE_URL}/v1/videos/image2video/${taskId}`, {
+    headers: authHeaders(),
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(
+      `Kling API error checking task (${response.status}): ${body.slice(0, 500)}`,
+    );
+  }
+
+  const task = (await response.json()) as KlingTaskResponse;
+  const status = task.data?.task_status;
+
+  if (status === "succeed") {
+    const videoUrl = task.data?.task_result?.videos?.[0]?.url;
+    if (!videoUrl) {
+      return {
+        status: "failed",
+        message: "Task succeeded but returned no video URL.",
+      };
+    }
+    return { status: "succeed", videoUrl };
+  }
+
+  if (status === "failed") {
+    return {
+      status: "failed",
+      message: task.data?.task_status_msg ?? "no reason given",
+    };
+  }
+
+  return { status: "processing" };
 }
 
 /** Branded 720x1280 placeholder — used only in mock mode. */
@@ -246,6 +306,10 @@ export interface VariantResult {
    * falls back to the still image for that variant, same as the single-video path. */
   videoUrl: string | null;
   error?: string;
+  /** Set when the failure was OUR poll giving up (not an actual Kling
+   * failure) — lets the caller offer "Check again" instead of re-generating
+   * from scratch. See KlingTimeoutError. */
+  taskId?: string;
 }
 
 /**
@@ -273,14 +337,16 @@ export async function generateBrandVariants(
         videoUrl: result.value,
       };
     }
+    const reason = result.reason;
     return {
       label: def.label,
       integrationStyle: def.integrationStyle,
       videoUrl: null,
       error:
-        result.reason instanceof Error
-          ? result.reason.message
+        reason instanceof Error
+          ? reason.message
           : "Unknown error generating this variant.",
+      taskId: reason instanceof KlingTimeoutError ? reason.taskId : undefined,
     };
   });
 }
