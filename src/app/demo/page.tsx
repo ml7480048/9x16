@@ -1,13 +1,43 @@
+"use client";
+
+import { useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { VerticalPlayer } from "@/components/player/VerticalPlayer";
+import { VariantSwitcher } from "@/components/player/VariantSwitcher";
+import type { VariantLabel } from "@/lib/kling";
 
-// Day 11 morning: VerticalPlayer component built. Wired in here purely as a
-// visual smoke test — the real A/B/C VariantSwitcher + Kling-generated video
-// flow is still Day 12's task. The videoUrl below is a public sample clip
-// (NOT Kling output) used only to confirm tap-to-play/mute controls render
-// and work; swap for real generated video once Day 12 wires it up.
+// Day 11-12 smoke test: VerticalPlayer + VariantSwitcher wired together with
+// 3 distinct public sample clips (NOT Kling output) so switching is visually
+// obvious. Real generated video + full Step 5 wiring is Day 12 evening.
+const DEMO_VARIANTS: {
+  label: VariantLabel;
+  integrationStyle: "ambient" | "narrative-native" | "direct";
+  videoUrl: string;
+}[] = [
+  {
+    label: "A",
+    integrationStyle: "ambient",
+    videoUrl: "https://www.w3schools.com/html/mov_bbb.mp4",
+  },
+  {
+    label: "B",
+    integrationStyle: "narrative-native",
+    videoUrl:
+      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4",
+  },
+  {
+    label: "C",
+    integrationStyle: "direct",
+    videoUrl:
+      "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/coffee.mp4",
+  },
+];
+
 export default function DemoPage() {
+  const [activeLabel, setActiveLabel] = useState<VariantLabel>("A");
+  const activeVariant = DEMO_VARIANTS.find((v) => v.label === activeLabel)!;
+
   return (
     <div className="flex flex-1 flex-col">
       <Header />
@@ -16,15 +46,21 @@ export default function DemoPage() {
           Experience the Brand Prototype
         </h1>
         <p className="max-w-xs text-sm text-text-secondary">
-          VerticalPlayer component preview — playing a placeholder test clip
-          (not Kling output) to confirm tap-to-play and mute controls work.
-          Real generated video + A/B/C switcher land Day 12.
+          VerticalPlayer + VariantSwitcher preview — 3 placeholder clips (not
+          Kling output) so switching between them is visually obvious. Real
+          generated video lands Day 12 evening.
         </p>
-        <div className="w-full max-w-[240px]">
+        <div className="flex w-full max-w-[240px] flex-col gap-3">
           <VerticalPlayer
-            videoUrl="https://www.w3schools.com/html/mov_bbb.mp4"
+            key={activeVariant.videoUrl}
+            videoUrl={activeVariant.videoUrl}
             posterUrl="https://picsum.photos/seed/9x16demo/720/1280"
-            label="Demo scene preview"
+            label={`Variant ${activeVariant.label} preview`}
+          />
+          <VariantSwitcher
+            variants={DEMO_VARIANTS}
+            activeLabel={activeLabel}
+            onSelect={setActiveLabel}
           />
         </div>
       </main>
