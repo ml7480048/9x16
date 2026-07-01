@@ -14,9 +14,9 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "9×16 — Test before you invest.",
+  title: "9×16 — Vertical stories, tested before they're shot.",
   description:
-    "AI-generated story prototypes for branded vertical video — before a single camera rolls.",
+    "A Vienna studio for branded vertical series — AI-tested prototypes, then produced for real.",
 };
 
 export default function RootLayout({

@@ -2,8 +2,9 @@ import Link from "next/link";
 
 const navItems = [
   { label: "Platform", href: "/platform" },
-  { label: "Demo", href: "/demo" },
-  { label: "Pricing", href: "/#pricing" },
+  { label: "Player", href: "/player" },
+  { label: "Contacts", href: "/contacts" },
+  { label: "Team", href: "/team" },
 ];
 
 export function Header() {
