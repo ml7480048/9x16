@@ -5,7 +5,7 @@ export function ProblemSection() {
   return (
     <section className="flex flex-col border-t border-border px-6 py-24">
       <h2 className="font-[family-name:var(--font-display)] max-w-sm text-4xl leading-[0.95] text-text-primary sm:text-5xl">
-        Brands are producing content blind.
+        Brands are producing blind.
       </h2>
     </section>
   );
