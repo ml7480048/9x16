@@ -5,11 +5,17 @@
 // minimum prepay (Kling's image API needs a ~$9.80 minimum top-up). See project notes
 // for the full provider comparison (images: Nano Banana, video: Runway — Kling dropped).
 //
+// MODEL NOTE (2026-07-01): the newer "gemini-2.5-flash-image" model returned a 429 with
+// limit:0 on the free tier (image generation apparently isn't included in the free
+// allowance for that model, despite Gemini's free tier existing for text). Using the
+// older experimental "gemini-2.0-flash-exp-image-generation" instead, which community
+// docs still show as free-tier accessible as of this date. Re-verify if this changes.
+//
 // MOCK MODE: if GEMINI_API_KEY is missing or still the placeholder value, generateSceneImage
 // returns a branded placeholder image (inline SVG data URI) instead of calling the real API.
 
 const GEMINI_API_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent";
 
 function isMockMode(): boolean {
   const key = process.env.GEMINI_API_KEY;
@@ -52,7 +58,7 @@ export async function generateSceneImage(description: string): Promise<string> {
     },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { responseModalities: ["IMAGE", "TEXT"] },
+      generationConfig: { responseModalities: ["TEXT", "IMAGE"] },
     }),
   });
 
