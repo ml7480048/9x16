@@ -7,12 +7,14 @@ import { BrandInputForm } from "./BrandInputForm";
 import { VisualSetupForm } from "./VisualSetupForm";
 import { StoryboardGrid } from "./StoryboardGrid";
 import { ScriptViewer } from "./ScriptViewer";
+import { PrototypeViewer } from "./PrototypeViewer";
 import {
   emptyWizardFormData,
   type SceneImages,
   type WizardFormData,
 } from "@/lib/types";
 import type { EpisodeScript, SceneDraft } from "@/lib/anthropic";
+import type { VariantLabel, VariantResult } from "@/lib/kling";
 
 const TOTAL_STEPS = 5;
 const STORAGE_KEY = "9x16-wizard-state";
@@ -23,6 +25,8 @@ interface PersistedState {
   scenes: SceneDraft[] | null;
   script: EpisodeScript | null;
   images: SceneImages;
+  variants: VariantResult[] | null;
+  activeVariantLabel: VariantLabel;
 }
 
 function loadPersisted(): PersistedState | null {
@@ -42,6 +46,9 @@ export function Wizard() {
   const [scenes, setScenes] = useState<SceneDraft[] | null>(null);
   const [script, setScript] = useState<EpisodeScript | null>(null);
   const [images, setImages] = useState<SceneImages>({});
+  const [variants, setVariants] = useState<VariantResult[] | null>(null);
+  const [activeVariantLabel, setActiveVariantLabel] =
+    useState<VariantLabel>("A");
   const [hydrated, setHydrated] = useState(false);
 
   // Restore persisted progress once, after mount. Deliberately not done via a
@@ -58,6 +65,8 @@ export function Wizard() {
         setScenes(persisted.scenes);
         setScript(persisted.script);
         setImages(persisted.images ?? {});
+        setVariants(persisted.variants ?? null);
+        setActiveVariantLabel(persisted.activeVariantLabel ?? "A");
       }
       setHydrated(true);
     });
@@ -68,9 +77,26 @@ export function Wizard() {
   // session with pre-restore defaults on the very first render.
   useEffect(() => {
     if (!hydrated || typeof window === "undefined") return;
-    const payload: PersistedState = { step, data, scenes, script, images };
+    const payload: PersistedState = {
+      step,
+      data,
+      scenes,
+      script,
+      images,
+      variants,
+      activeVariantLabel,
+    };
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [hydrated, step, data, scenes, script, images]);
+  }, [
+    hydrated,
+    step,
+    data,
+    scenes,
+    script,
+    images,
+    variants,
+    activeVariantLabel,
+  ]);
 
   function update(partial: Partial<WizardFormData>) {
     setData((prev) => ({ ...prev, ...partial }));
@@ -121,12 +147,15 @@ export function Wizard() {
           onScriptReady={setScript}
         />
       )}
-      {step === 5 && (
-        <div className="flex flex-1 flex-col items-center justify-center gap-2 py-16 text-center">
-          <p className="max-w-xs text-sm text-text-secondary">
-            Video preview + Brand Prototype variants arrive Week 3.
-          </p>
-        </div>
+      {step === 5 && scenes && (
+        <PrototypeViewer
+          scenes={scenes}
+          images={images}
+          variants={variants}
+          onVariantsReady={setVariants}
+          activeLabel={activeVariantLabel}
+          onActiveLabelChange={setActiveVariantLabel}
+        />
       )}
 
       <div className="mt-auto flex justify-between gap-3">
