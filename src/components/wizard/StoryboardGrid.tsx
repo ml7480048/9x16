@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
+import { Textarea } from "@/components/ui/Textarea";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import type { SceneDraft } from "@/lib/anthropic";
@@ -26,6 +27,11 @@ export function StoryboardGrid({
   const [loading, setLoading] = useState(!scenes);
   const [error, setError] = useState<string | null>(null);
   const [images, setImages] = useState<Record<string, ImageState>>({});
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draftText, setDraftText] = useState("");
+  // Tracks which scene IDs already have an image request in flight/done, so
+  // editing one scene's description doesn't re-trigger fetches for the rest.
+  const requestedIds = useRef<Set<string>>(new Set());
 
   const runFetch = useCallback(() => {
     fetch("/api/generate-scenes", {
@@ -62,28 +68,59 @@ export function StoryboardGrid({
     runFetch();
   }, [runFetch]);
 
-  // Fire per-scene image generation once scenes are available. No synchronous
+  // Fetches (or re-fetches) the image for a single scene. No synchronous
   // setState here — the request is kicked off directly, state only updates
   // inside the async .then/.catch handlers.
+  const fetchImageFor = useCallback((sceneId: string, description: string) => {
+    setImages((prev) => ({ ...prev, [sceneId]: {} })); // clear -> shows loading skeleton
+    fetch("/api/generate-image", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ description }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Failed to generate image.");
+        setImages((prev) => ({ ...prev, [sceneId]: { url: data.imageUrl } }));
+      })
+      .catch((err) => {
+        const message = err instanceof Error ? err.message : "Unknown error.";
+        setImages((prev) => ({ ...prev, [sceneId]: { error: message } }));
+      });
+  }, []);
+
+  // Fire per-scene image generation once scenes are available — only for
+  // scene IDs not already requested, so editing one scene's description
+  // doesn't burn Kling credits re-generating every other scene's image too.
   useEffect(() => {
     if (!scenes) return;
     scenes.forEach((scene) => {
-      fetch("/api/generate-image", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description: scene.description }),
-      })
-        .then(async (res) => {
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error ?? "Failed to generate image.");
-          setImages((prev) => ({ ...prev, [scene.id]: { url: data.imageUrl } }));
-        })
-        .catch((err) => {
-          const message = err instanceof Error ? err.message : "Unknown error.";
-          setImages((prev) => ({ ...prev, [scene.id]: { error: message } }));
-        });
+      if (requestedIds.current.has(scene.id)) return;
+      requestedIds.current.add(scene.id);
+      fetchImageFor(scene.id, scene.description);
     });
-  }, [scenes]);
+  }, [scenes, fetchImageFor]);
+
+  function startEdit(scene: SceneDraft) {
+    setEditingId(scene.id);
+    setDraftText(scene.description);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setDraftText("");
+  }
+
+  function saveEdit(scene: SceneDraft) {
+    const trimmed = draftText.trim();
+    setEditingId(null);
+    if (!scenes || !trimmed || trimmed === scene.description) return;
+    const updated = scenes.map((s) =>
+      s.id === scene.id ? { ...s, description: trimmed } : s
+    );
+    onScenesReady(updated);
+    fetchImageFor(scene.id, trimmed); // regenerate only this scene's image
+  }
 
   if (loading) return <LoadingState text="Generating your story..." />;
   if (error) return <ErrorState message={error} onRetry={handleRetry} />;
@@ -121,15 +158,46 @@ export function StoryboardGrid({
                 </div>
               )}
             </div>
-            <p className="text-xs leading-5 text-text-secondary">
-              {scene.description}
-            </p>
-            <button
-              type="button"
-              className="self-start text-xs text-text-secondary underline decoration-dotted transition-colors hover:text-text-primary"
-            >
-              Edit
-            </button>
+            {editingId === scene.id ? (
+              <div className="flex flex-col gap-2">
+                <Textarea
+                  value={draftText}
+                  onChange={(e) => setDraftText(e.target.value)}
+                  rows={4}
+                  className="text-xs"
+                  autoFocus
+                />
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => saveEdit(scene)}
+                    className="text-xs font-medium text-accent"
+                  >
+                    Save &amp; regenerate
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelEdit}
+                    className="text-xs text-text-secondary hover:text-text-primary"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <p className="text-xs leading-5 text-text-secondary">
+                  {scene.description}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => startEdit(scene)}
+                  className="self-start text-xs text-text-secondary underline decoration-dotted transition-colors hover:text-text-primary"
+                >
+                  Edit
+                </button>
+              </>
+            )}
           </Card>
         );
       })}
