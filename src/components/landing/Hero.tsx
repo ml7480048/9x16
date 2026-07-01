@@ -28,6 +28,13 @@ export function Hero() {
         Test the story.
       </h1>
 
+      <p className="animate-fade-in max-w-sm text-sm leading-6 text-text-secondary">
+        9×16 is a Vienna-based content-tech startup redefining how brands create
+        and validate narrative content for the vertical era. The platform
+        combines AI-generated prototypes with real production to reduce risk and
+        improve content performance.
+      </p>
+
       <Link
         href="/platform/new"
         className={buttonVariants({ variant: "accent" })}
