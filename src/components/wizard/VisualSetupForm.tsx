@@ -98,7 +98,7 @@ function SelectableCard({
       onClick={onClick}
       className={cn(
         "flex cursor-pointer flex-col gap-1 transition-colors",
-        selected ? "border-accent" : "hover:border-text-secondary"
+        selected ? "!border-accent" : "hover:border-text-secondary"
       )}
     >
       {children}
