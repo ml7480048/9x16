@@ -4,7 +4,7 @@ const steps = [
   "Brand Input",
   "Visual Setup",
   "Storyboard",
-  "Script",
+  "Detailed Script",
   "Preview",
 ];
 
