@@ -41,8 +41,11 @@ export async function POST(request: NextRequest) {
   const modifier = body.variantStyle
     ? VARIANT_MODIFIERS[body.variantStyle]
     : undefined;
+  // Modifier first (primary instruction), scene description as context after
+  // — matches generateBrandVariants' ordering (kling.ts) so a single retry
+  // is consistent with the initial parallel batch.
   const prompt = modifier
-    ? `${body.description} ${modifier}`
+    ? `${modifier} Scene: ${body.description}`
     : body.description;
 
   try {

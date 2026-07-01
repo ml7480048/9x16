@@ -277,6 +277,12 @@ export async function generateVideoFromImage(
 export type VariantLabel = "A" | "B" | "C";
 export type IntegrationStyle = "ambient" | "narrative-native" | "direct";
 
+// Modifiers rewritten 2026-07-01 after a real test showed all 3 variants
+// looking nearly identical. Original wording ("keep subtle", "drives the
+// action") was too abstract for a 5s image-to-video clip to visibly act on,
+// and was appended AFTER the scene description — likely diluted. Rewritten
+// as concrete camera/action instructions and moved to the FRONT of the
+// prompt (see generateBrandVariants) so Kling weights them more heavily.
 export const VARIANT_DEFINITIONS: {
   label: VariantLabel;
   integrationStyle: IntegrationStyle;
@@ -285,17 +291,20 @@ export const VARIANT_DEFINITIONS: {
   {
     label: "A",
     integrationStyle: "ambient",
-    modifier: "Keep the product subtle, visible in the background only.",
+    modifier:
+      "Camera holds a wide, gently drifting shot. The product stays soft and out-of-focus in the background the entire time — never the subject.",
   },
   {
     label: "B",
     integrationStyle: "narrative-native",
-    modifier: "The product should visibly drive the moment of action.",
+    modifier:
+      "Midway through the clip, the camera follows a hand reaching for and picking up the product — this pickup becomes the central action of the shot.",
   },
   {
     label: "C",
     integrationStyle: "direct",
-    modifier: "Feature the product directly and prominently in the frame.",
+    modifier:
+      "Camera pushes into a tight close-up on the product itself, label facing the viewer, held steady and clearly in focus for most of the clip.",
   },
 ];
 
@@ -324,7 +333,9 @@ export async function generateBrandVariants(
 ): Promise<VariantResult[]> {
   const settled = await Promise.allSettled(
     VARIANT_DEFINITIONS.map((def) =>
-      generateVideoFromImage(imageUrl, `${description} ${def.modifier}`),
+      // Modifier first (primary instruction), scene description as context
+      // after — front-loading gives it more weight than appending it.
+      generateVideoFromImage(imageUrl, `${def.modifier} Scene: ${description}`),
     ),
   );
 
