@@ -22,7 +22,7 @@ export default function DemoPage() {
         </p>
         <div className="w-full max-w-[240px]">
           <VerticalPlayer
-            videoUrl="https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+            videoUrl="https://www.w3schools.com/html/mov_bbb.mp4"
             posterUrl="https://picsum.photos/seed/9x16demo/720/1280"
             label="Demo scene preview"
           />

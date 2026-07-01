@@ -84,6 +84,7 @@ export function VerticalPlayer({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
   const [showControls, setShowControls] = useState(true);
+  const [hasError, setHasError] = useState(false);
 
   function togglePlay() {
     const video = videoRef.current;
@@ -147,8 +148,17 @@ export function VerticalPlayer({
         muted={isMuted}
         loop
         playsInline
+        preload="auto"
+        onError={() => setHasError(true)}
         className="h-full w-full object-cover"
       />
+      {hasError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-surface-elevated">
+          <span className="px-4 text-center text-xs text-text-secondary">
+            Video failed to load
+          </span>
+        </div>
+      )}
 
       {/* Center play/pause overlay — fades in/out, subtle motion only. */}
       <div
