@@ -29,11 +29,11 @@ export function Sidebar() {
             onClick={() => {
               // "New Session" should always start blank — without this, a
               // click here just resumes whatever wizard progress happened
-              // to be sitting in sessionStorage from a previous attempt.
-              // A plain browser reload mid-wizard still restores normally,
-              // since that doesn't go through this onClick.
+              // to be sitting in localStorage from a previous attempt.
+              // A plain browser reload/reopen mid-wizard still restores
+              // normally, since that doesn't go through this onClick.
               if (item.href === "/platform/new") {
-                window.sessionStorage.removeItem(WIZARD_STORAGE_KEY);
+                window.localStorage.removeItem(WIZARD_STORAGE_KEY);
               }
             }}
             className={cn(

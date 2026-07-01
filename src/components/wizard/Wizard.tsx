@@ -36,7 +36,7 @@ interface PersistedState {
 function loadPersisted(): PersistedState | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = window.sessionStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     return JSON.parse(raw) as PersistedState;
   } catch {
@@ -78,9 +78,14 @@ export function Wizard() {
     });
   }, []);
 
-  // Persist progress so an accidental reload (e.g. mobile pull-to-refresh) doesn't
-  // wipe the session. Gated on `hydrated` so we don't overwrite a just-restored
-  // session with pre-restore defaults on the very first render.
+  // Persist progress to localStorage (not sessionStorage) so it survives a
+  // backgrounded/closed mobile tab, not just an in-page reload — iOS Safari in
+  // particular can silently discard sessionStorage when a tab is suspended or
+  // the browser app is switched away from, which is the "5th step then it's
+  // just gone" bug this was fixing. Gated on `hydrated` so we don't overwrite
+  // a just-restored session with pre-restore defaults on the very first
+  // render. "New Session" (Sidebar) still explicitly clears this key, so
+  // intentionally starting over isn't affected.
   useEffect(() => {
     if (!hydrated || typeof window === "undefined") return;
     const payload: PersistedState = {
@@ -93,7 +98,7 @@ export function Wizard() {
       activeVariantLabel,
       heroSceneId,
     };
-    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   }, [
     hydrated,
     step,
@@ -134,7 +139,7 @@ export function Wizard() {
 
   return (
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 py-10">
-      <StepIndicator currentStep={step} />
+      <StepIndicator currentStep={step} onStepSelect={setStep} />
 
       {step === 1 && <BrandInputForm data={data} onChange={update} />}
       {step === 2 && <VisualSetupForm data={data} onChange={update} />}

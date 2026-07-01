@@ -19,7 +19,7 @@ interface StoryboardGridProps {
   brandData: WizardFormData;
   scenes: SceneDraft[] | null;
   onScenesReady: (scenes: SceneDraft[]) => void;
-  // Lifted up to Wizard (and persisted to sessionStorage there) so navigating
+  // Lifted up to Wizard (and persisted to localStorage there) so navigating
   // Back to this step doesn't burn Kling credits re-generating every image.
   images: SceneImages;
   onImagesChange: Dispatch<SetStateAction<SceneImages>>;

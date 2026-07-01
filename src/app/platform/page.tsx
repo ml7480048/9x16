@@ -69,7 +69,7 @@ export default function PlatformDashboard() {
       <div>
         <Link
           href="/platform/new"
-          onClick={() => window.sessionStorage.removeItem(WIZARD_STORAGE_KEY)}
+          onClick={() => window.localStorage.removeItem(WIZARD_STORAGE_KEY)}
           className={buttonVariants({ variant: "accent" })}
         >
           Start my free prototype <span aria-hidden="true">→</span>
