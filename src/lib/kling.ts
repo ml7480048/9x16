@@ -1,12 +1,200 @@
-// DEPRECATED — not used.
+// Kling AI wrapper — 9×16
+// Used for: scene image generation (Storyboard, Step 3) AND image-to-video (Step 5 preview).
+// Single provider for both, per Marian's preference — replaces the earlier Nano Banana
+// (images, blocked on free tier) + Runway (video, unused) split.
 //
-// 9×16 originally planned Kling AI for both image and video generation (see dev spec).
-// Decision (2026-07-01): switched to a cheaper-to-start provider split instead —
-// Nano Banana (Gemini image API, see nanoBanana.ts) for scene images, Runway ML API
-// for image-to-video (Day 9). Reason: Kling's official API requires large minimum
-// prepay (~$9.80 for images, ~$4,200 for video) vs. Nano Banana's free tier and
-// Runway's $10 minimum.
+// Decision history (2026-07-01): originally tried Nano Banana (Google Gemini) for images —
+// blocked, free tier doesn't cover image generation. Then built Runway for video ($10 min).
+// Then found Kling's real Trial Packages are much cheaper than the ~$4,200 figure from
+// earlier research: Image API trial $2.45/1000 units, Video API trial $9.80/100 units
+// (both 30-day validity) — see https://kling.ai/dev/pricing. Switched back to unified Kling.
 //
-// This file is kept only so old branches/history make sense — nothing imports it.
-// Safe to delete once confirmed unused.
-export {};
+// AUTH (corrected 2026-07-01): the kling.ai/dev platform Marian actually signed up on
+// issues a single static API key (looks like `api-key-kling-...`), used directly as a
+// Bearer token — not the Access Key + Secret Key JWT scheme documented by an older
+// third-party SDK (github.com/aself101/kling-api), which appears to target a different/
+// older Kling developer platform. Using the simple scheme since it matches the real key.
+//
+// CONFIDENCE NOTE: Kling's own reference pages (kling.ai/document-api/...) are JS-rendered
+// and couldn't be fetched directly, so endpoint paths/field names below are still best-
+// effort (cross-checked against the third-party SDK for the request/response shapes, just
+// not the auth scheme). If real calls fail with a 401, double check whether this platform
+// actually wants JWT after all; if they fail with an "unexpected shape" error, check field
+// names against docs.dev or the kling-api SDK.
+//
+// MOCK MODE: if KLING_API_KEY is missing or still a placeholder, generateSceneImage returns
+// a branded placeholder image, generateVideoFromImage returns null (caller falls back to
+// showing the still image).
+
+const BASE_URL = "https://api-singapore.klingai.com";
+const POLL_INTERVAL_MS = 3000;
+const POLL_TIMEOUT_MS = 120_000;
+
+function isMockMode(): boolean {
+  const key = process.env.KLING_API_KEY;
+  return !key || key === "your_key_here" || key === "test";
+}
+
+function authHeaders(): HeadersInit {
+  return {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${process.env.KLING_API_KEY}`,
+  };
+}
+
+interface KlingTaskResponse {
+  code: number;
+  message?: string;
+  data?: {
+    task_id: string;
+    task_status: "submitted" | "processing" | "succeed" | "failed";
+    task_status_msg?: string;
+    task_result?: {
+      images?: { index: number; url: string }[];
+      videos?: { id: string; url: string; duration: string }[];
+    };
+  };
+}
+
+async function pollTask(
+  taskUrlBase: string,
+  taskId: string
+): Promise<KlingTaskResponse> {
+  const deadline = Date.now() + POLL_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    const response = await fetch(`${taskUrlBase}/${taskId}`, {
+      headers: authHeaders(),
+    });
+
+    if (!response.ok) {
+      const body = await response.text();
+      throw new Error(
+        `Kling API error checking task (${response.status}): ${body.slice(0, 500)}`
+      );
+    }
+
+    const task = (await response.json()) as KlingTaskResponse;
+    const status = task.data?.task_status;
+
+    if (status === "succeed") return task;
+    if (status === "failed") {
+      throw new Error(
+        `Kling task failed: ${task.data?.task_status_msg ?? "no reason given"}`
+      );
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS));
+  }
+
+  throw new Error("Kling generation timed out after 120 seconds.");
+}
+
+/** Branded 720x1280 placeholder — used only in mock mode. */
+function mockImageUrl(seed: string): string {
+  const label = seed.replace(/[<>&]/g, "").slice(0, 44);
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1280" viewBox="0 0 720 1280">
+    <rect width="720" height="1280" fill="#1A1A1A"/>
+    <rect x="1" y="1" width="718" height="1278" fill="none" stroke="#2A2A2A" stroke-width="2"/>
+    <g transform="translate(360 600)" stroke="#FF3C00" stroke-width="4" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="-70" y="-45" width="140" height="90" rx="6"/>
+      <circle cx="0" cy="0" r="28"/>
+      <rect x="35" y="-70" width="35" height="25" rx="4"/>
+    </g>
+    <text x="360" y="700" font-family="sans-serif" font-size="24" fill="#888888" text-anchor="middle">AI image placeholder</text>
+    <text x="360" y="734" font-family="sans-serif" font-size="16" fill="#555555" text-anchor="middle">${label}</text>
+  </svg>`;
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+}
+
+/** Step 3 — generates a single cinematic still for a scene description. */
+export async function generateSceneImage(description: string): Promise<string> {
+  if (isMockMode()) {
+    return mockImageUrl(description);
+  }
+
+  const createResponse = await fetch(`${BASE_URL}/v1/images/generations`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({
+      model_name: "kling-v1",
+      prompt: `Cinematic, dark, premium film-still aesthetic, vertical composition. ${description}`,
+      n: 1,
+      aspect_ratio: "9:16",
+    }),
+  });
+
+  if (!createResponse.ok) {
+    const body = await createResponse.text();
+    throw new Error(
+      `Kling API error creating image task (${createResponse.status}): ${body.slice(0, 500)}`
+    );
+  }
+
+  const created = (await createResponse.json()) as KlingTaskResponse;
+  if (!created.data?.task_id) {
+    throw new Error("Kling image task creation returned no task_id.");
+  }
+
+  const finished = await pollTask(
+    `${BASE_URL}/v1/images/generations`,
+    created.data.task_id
+  );
+  const imageUrl = finished.data?.task_result?.images?.[0]?.url;
+
+  if (!imageUrl) {
+    throw new Error("Kling image task succeeded but returned no image URL.");
+  }
+
+  return imageUrl;
+}
+
+/**
+ * Generates a vertical (9:16) video clip from a scene image + description.
+ * Returns `null` in mock mode — caller should fall back to the still image.
+ */
+export async function generateVideoFromImage(
+  imageUrl: string,
+  description: string
+): Promise<string | null> {
+  if (isMockMode()) {
+    return null;
+  }
+
+  const createResponse = await fetch(`${BASE_URL}/v1/videos/image2video`, {
+    method: "POST",
+    headers: authHeaders(),
+    body: JSON.stringify({
+      model_name: "kling-v1-6",
+      image: imageUrl,
+      prompt: description,
+      mode: "std",
+      duration: "5",
+      aspect_ratio: "9:16",
+    }),
+  });
+
+  if (!createResponse.ok) {
+    const body = await createResponse.text();
+    throw new Error(
+      `Kling API error creating video task (${createResponse.status}): ${body.slice(0, 500)}`
+    );
+  }
+
+  const created = (await createResponse.json()) as KlingTaskResponse;
+  if (!created.data?.task_id) {
+    throw new Error("Kling video task creation returned no task_id.");
+  }
+
+  const finished = await pollTask(
+    `${BASE_URL}/v1/videos/image2video`,
+    created.data.task_id
+  );
+  const videoUrl = finished.data?.task_result?.videos?.[0]?.url;
+
+  if (!videoUrl) {
+    throw new Error("Kling video task succeeded but returned no video URL.");
+  }
+
+  return videoUrl;
+}

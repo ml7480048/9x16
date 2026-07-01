@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateSceneImage } from "@/lib/nanoBanana";
+import { generateSceneImage } from "@/lib/kling";
 
 interface GenerateImageBody {
   description?: string;
