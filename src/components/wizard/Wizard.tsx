@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { StepIndicator } from "./StepIndicator";
 import { BrandInputForm } from "./BrandInputForm";
@@ -11,12 +11,59 @@ import { emptyWizardFormData, type WizardFormData } from "@/lib/types";
 import type { EpisodeScript, SceneDraft } from "@/lib/anthropic";
 
 const TOTAL_STEPS = 5;
+const STORAGE_KEY = "9x16-wizard-state";
+
+interface PersistedState {
+  step: number;
+  data: WizardFormData;
+  scenes: SceneDraft[] | null;
+  script: EpisodeScript | null;
+}
+
+function loadPersisted(): PersistedState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PersistedState;
+  } catch {
+    return null;
+  }
+}
 
 export function Wizard() {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardFormData>(emptyWizardFormData);
   const [scenes, setScenes] = useState<SceneDraft[] | null>(null);
   const [script, setScript] = useState<EpisodeScript | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+
+  // Restore persisted progress once, after mount. Deliberately not done via a
+  // useState lazy initializer — sessionStorage isn't available during server
+  // render, so reading it there would cause a hydration mismatch. The state
+  // updates are deferred to a microtask (rather than called synchronously in
+  // the effect body) to satisfy the "no setState directly in effect" rule.
+  useEffect(() => {
+    queueMicrotask(() => {
+      const persisted = loadPersisted();
+      if (persisted) {
+        setStep(persisted.step);
+        setData(persisted.data);
+        setScenes(persisted.scenes);
+        setScript(persisted.script);
+      }
+      setHydrated(true);
+    });
+  }, []);
+
+  // Persist progress so an accidental reload (e.g. mobile pull-to-refresh) doesn't
+  // wipe the session. Gated on `hydrated` so we don't overwrite a just-restored
+  // session with pre-restore defaults on the very first render.
+  useEffect(() => {
+    if (!hydrated || typeof window === "undefined") return;
+    const payload: PersistedState = { step, data, scenes, script };
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  }, [hydrated, step, data, scenes, script]);
 
   function update(partial: Partial<WizardFormData>) {
     setData((prev) => ({ ...prev, ...partial }));

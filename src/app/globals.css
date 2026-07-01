@@ -21,10 +21,12 @@
 
 html {
   color-scheme: dark;
+  overscroll-behavior-y: none;
 }
 
 body {
   background: var(--color-background);
   color: var(--color-text-primary);
   font-family: var(--font-body), Arial, Helvetica, sans-serif;
+  overscroll-behavior-y: none;
 }

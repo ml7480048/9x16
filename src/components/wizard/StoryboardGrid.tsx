@@ -15,7 +15,7 @@ interface StoryboardGridProps {
 
 interface ImageState {
   url?: string;
-  error?: boolean;
+  error?: string;
 }
 
 export function StoryboardGrid({
@@ -78,8 +78,9 @@ export function StoryboardGrid({
           if (!res.ok) throw new Error(data.error ?? "Failed to generate image.");
           setImages((prev) => ({ ...prev, [scene.id]: { url: data.imageUrl } }));
         })
-        .catch(() => {
-          setImages((prev) => ({ ...prev, [scene.id]: { error: true } }));
+        .catch((err) => {
+          const message = err instanceof Error ? err.message : "Unknown error.";
+          setImages((prev) => ({ ...prev, [scene.id]: { error: message } }));
         });
     });
   }, [scenes]);
@@ -110,8 +111,13 @@ export function StoryboardGrid({
                 <div className="absolute inset-0 animate-pulse bg-surface" />
               )}
               {image?.error && (
-                <div className="absolute inset-0 flex items-center justify-center p-2 text-center text-[10px] text-text-secondary">
-                  Image failed to generate
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 overflow-hidden p-2 text-center">
+                  <span className="text-[10px] text-text-secondary">
+                    Image failed to generate
+                  </span>
+                  <span className="line-clamp-4 text-[9px] leading-tight text-text-secondary/70">
+                    {image.error}
+                  </span>
                 </div>
               )}
             </div>
