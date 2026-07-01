@@ -9,6 +9,9 @@ import type { SceneDraft } from "@/lib/anthropic";
 import type { SceneImages } from "@/lib/types";
 import type { VariantLabel, VariantResult } from "@/lib/kling";
 
+const hasAnyFailure = (variants: VariantResult[]) =>
+  variants.some((v) => !v.videoUrl);
+
 interface PrototypeViewerProps {
   scenes: SceneDraft[];
   images: SceneImages;
@@ -125,6 +128,15 @@ export function PrototypeViewer({
         activeLabel={activeLabel}
         onSelect={onActiveLabelChange}
       />
+      <button
+        type="button"
+        onClick={handleRetry}
+        className="self-center text-xs text-text-secondary underline decoration-dotted transition-colors hover:text-text-primary"
+      >
+        {hasAnyFailure(variants)
+          ? "Regenerate all 3 variants"
+          : "Regenerate variants anyway"}
+      </button>
     </div>
   );
 }
