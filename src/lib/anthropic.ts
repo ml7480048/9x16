@@ -10,7 +10,11 @@
 import type { NarrativeFormat, WizardFormData } from "./types";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
-const MODEL = "claude-sonnet-4-20250514";
+// claude-sonnet-4-20250514 was retired from the first-party API (2026-07-01 check —
+// only still served via Bedrock/Google Cloud per platform.claude.com/docs). Using the
+// current model, which also gets cheaper introductory pricing ($2/$10 per MTok in/out,
+// vs $3/$15 standard) through 2026-08-31.
+const MODEL = "claude-sonnet-5";
 
 function isMockMode(): boolean {
   const key = process.env.ANTHROPIC_API_KEY;
