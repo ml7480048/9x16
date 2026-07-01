@@ -37,7 +37,8 @@ export function ScriptViewer({
     })
       .then(async (res) => {
         const data = await res.json();
-        if (!res.ok) throw new Error(data.error ?? "Failed to generate script.");
+        if (!res.ok)
+          throw new Error(data.error ?? "Failed to generate script.");
         onScriptReady(data.script as EpisodeScript);
       })
       .catch((err) => {
@@ -58,7 +59,18 @@ export function ScriptViewer({
     runFetch();
   }, [runFetch]);
 
-  if (loading) return <LoadingState text="Writing the story..." />;
+  if (loading)
+    return (
+      <LoadingState
+        text="Writing the story..."
+        stages={[
+          "Reviewing your storyboard...",
+          "Writing scene action...",
+          "Weaving in the brand...",
+          "Finishing touches...",
+        ]}
+      />
+    );
   if (error) return <ErrorState message={error} onRetry={handleRetry} />;
   if (!script) return null;
 
@@ -76,7 +88,9 @@ export function ScriptViewer({
             <span className="text-xs font-semibold uppercase tracking-wide text-text-secondary">
               Scene {scene.sceneNumber}
             </span>
-            <p className="text-sm leading-6 text-text-primary">{scene.action}</p>
+            <p className="text-sm leading-6 text-text-primary">
+              {scene.action}
+            </p>
             <p className="text-sm font-medium leading-6 text-accent">
               {scene.brandIntegration}
             </p>

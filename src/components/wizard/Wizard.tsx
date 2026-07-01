@@ -7,7 +7,11 @@ import { BrandInputForm } from "./BrandInputForm";
 import { VisualSetupForm } from "./VisualSetupForm";
 import { StoryboardGrid } from "./StoryboardGrid";
 import { ScriptViewer } from "./ScriptViewer";
-import { emptyWizardFormData, type WizardFormData } from "@/lib/types";
+import {
+  emptyWizardFormData,
+  type SceneImages,
+  type WizardFormData,
+} from "@/lib/types";
 import type { EpisodeScript, SceneDraft } from "@/lib/anthropic";
 
 const TOTAL_STEPS = 5;
@@ -18,6 +22,7 @@ interface PersistedState {
   data: WizardFormData;
   scenes: SceneDraft[] | null;
   script: EpisodeScript | null;
+  images: SceneImages;
 }
 
 function loadPersisted(): PersistedState | null {
@@ -36,6 +41,7 @@ export function Wizard() {
   const [data, setData] = useState<WizardFormData>(emptyWizardFormData);
   const [scenes, setScenes] = useState<SceneDraft[] | null>(null);
   const [script, setScript] = useState<EpisodeScript | null>(null);
+  const [images, setImages] = useState<SceneImages>({});
   const [hydrated, setHydrated] = useState(false);
 
   // Restore persisted progress once, after mount. Deliberately not done via a
@@ -51,6 +57,7 @@ export function Wizard() {
         setData(persisted.data);
         setScenes(persisted.scenes);
         setScript(persisted.script);
+        setImages(persisted.images ?? {});
       }
       setHydrated(true);
     });
@@ -61,9 +68,9 @@ export function Wizard() {
   // session with pre-restore defaults on the very first render.
   useEffect(() => {
     if (!hydrated || typeof window === "undefined") return;
-    const payload: PersistedState = { step, data, scenes, script };
+    const payload: PersistedState = { step, data, scenes, script, images };
     window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  }, [hydrated, step, data, scenes, script]);
+  }, [hydrated, step, data, scenes, script, images]);
 
   function update(partial: Partial<WizardFormData>) {
     setData((prev) => ({ ...prev, ...partial }));
@@ -102,6 +109,8 @@ export function Wizard() {
           brandData={data}
           scenes={scenes}
           onScenesReady={setScenes}
+          images={images}
+          onImagesChange={setImages}
         />
       )}
       {step === 4 && scenes && (

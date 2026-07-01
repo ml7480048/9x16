@@ -82,7 +82,15 @@ async function callClaude(prompt: string, maxTokens = 1024): Promise<string> {
 
   const data = (await response.json()) as {
     content?: { type: string; text?: string }[];
+    stop_reason?: string;
   };
+
+  if (data.stop_reason === "max_tokens") {
+    throw new Error(
+      "Claude response was cut off (hit max_tokens) before finishing — the JSON came back incomplete. Retry, or raise maxTokens for this call."
+    );
+  }
+
   const text = data.content?.find((block) => block.type === "text")?.text;
 
   if (typeof text !== "string") {
@@ -185,7 +193,7 @@ Respond with ONLY a raw JSON array (no markdown fences, no commentary), where ea
 
 "description" should be a concise visual/action description (1-2 sentences) suitable as an image generation prompt. "visualMood" should be a short phrase (e.g. "warm morning light, handheld").`;
 
-  const raw = await callClaude(prompt, 1200);
+  const raw = await callClaude(prompt, 1600);
   return parseJson<SceneDraft[]>(raw);
 }
 
@@ -210,10 +218,12 @@ ${describeBrand(brand)}
 Scenes:
 ${sceneList}
 
-For each scene, write the action/dialogue and a note on how the brand is integrated. Respond with ONLY raw JSON (no markdown fences, no commentary) in this shape:
+For each scene, write "action" as a concise 1-3 sentence description of what happens and any dialogue — plain prose, NOT screenplay format (no scene headings, no ALL-CAPS character intros, no camera directions). Also write "brandIntegration": a short note on how the brand appears in that specific scene. Keep the whole response compact — this is a summary, not a full screenplay.
+
+Respond with ONLY raw JSON (no markdown fences, no commentary) in this shape:
 { "title": string, "scenes": [{ "sceneNumber": number, "action": string, "brandIntegration": string }] }`;
 
-  const raw = await callClaude(prompt, 1500);
+  const raw = await callClaude(prompt, 2500);
   return parseJson<EpisodeScript>(raw);
 }
 

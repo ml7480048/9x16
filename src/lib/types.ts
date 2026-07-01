@@ -52,6 +52,14 @@ export interface WizardFormData {
   selectedFormat: NarrativeFormat | "";
 }
 
+/** Per-scene generated-image status, keyed by scene id. Lifted to Wizard so it
+ * survives navigating back/forward between steps without re-generating. */
+export interface SceneImageState {
+  url?: string;
+  error?: string;
+}
+export type SceneImages = Record<string, SceneImageState>;
+
 export const emptyWizardFormData: WizardFormData = {
   brandName: "",
   product: "",
