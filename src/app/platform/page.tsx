@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/Button";
+import { WIZARD_STORAGE_KEY } from "@/components/wizard/Wizard";
 
 export default function PlatformDashboard() {
   return (
@@ -8,10 +11,14 @@ export default function PlatformDashboard() {
         Start your first Brand Prototype
       </h1>
       <p className="max-w-xs text-sm leading-6 text-text-secondary">
-        Create an AI-generated episode prototype and compare brand
-        integration variants before production.
+        Create an AI-generated episode prototype and compare brand integration
+        variants before production.
       </p>
-      <Link href="/platform/new" className={buttonVariants()}>
+      <Link
+        href="/platform/new"
+        onClick={() => window.sessionStorage.removeItem(WIZARD_STORAGE_KEY)}
+        className={buttonVariants()}
+      >
         New Session
       </Link>
     </div>

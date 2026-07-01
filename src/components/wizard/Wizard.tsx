@@ -17,7 +17,10 @@ import type { EpisodeScript, SceneDraft } from "@/lib/anthropic";
 import type { VariantLabel, VariantResult } from "@/lib/kling";
 
 const TOTAL_STEPS = 5;
-const STORAGE_KEY = "9x16-wizard-state";
+// Exported so "New Session" entry points (Sidebar, dashboard CTA) can clear
+// stale in-progress state before navigating here.
+export const WIZARD_STORAGE_KEY = "9x16-wizard-state";
+const STORAGE_KEY = WIZARD_STORAGE_KEY;
 
 interface PersistedState {
   step: number;

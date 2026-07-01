@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { WIZARD_STORAGE_KEY } from "@/components/wizard/Wizard";
 
 const navItems = [
   { label: "New Session", href: "/platform/new" },
@@ -22,11 +23,21 @@ export function Sidebar() {
           <Link
             key={item.href}
             href={item.href}
+            onClick={() => {
+              // "New Session" should always start blank — without this, a
+              // click here just resumes whatever wizard progress happened
+              // to be sitting in sessionStorage from a previous attempt.
+              // A plain browser reload mid-wizard still restores normally,
+              // since that doesn't go through this onClick.
+              if (item.href === "/platform/new") {
+                window.sessionStorage.removeItem(WIZARD_STORAGE_KEY);
+              }
+            }}
             className={cn(
               "whitespace-nowrap rounded-input px-3 py-2 text-sm transition-colors",
               active
                 ? "bg-surface-elevated text-accent"
-                : "text-text-secondary hover:text-text-primary"
+                : "text-text-secondary hover:text-text-primary",
             )}
           >
             {item.label}
