@@ -58,7 +58,7 @@ interface KlingTaskResponse {
 
 async function pollTask(
   taskUrlBase: string,
-  taskId: string
+  taskId: string,
 ): Promise<KlingTaskResponse> {
   const deadline = Date.now() + POLL_TIMEOUT_MS;
 
@@ -70,7 +70,7 @@ async function pollTask(
     if (!response.ok) {
       const body = await response.text();
       throw new Error(
-        `Kling API error checking task (${response.status}): ${body.slice(0, 500)}`
+        `Kling API error checking task (${response.status}): ${body.slice(0, 500)}`,
       );
     }
 
@@ -80,7 +80,7 @@ async function pollTask(
     if (status === "succeed") return task;
     if (status === "failed") {
       throw new Error(
-        `Kling task failed: ${task.data?.task_status_msg ?? "no reason given"}`
+        `Kling task failed: ${task.data?.task_status_msg ?? "no reason given"}`,
       );
     }
 
@@ -127,7 +127,7 @@ export async function generateSceneImage(description: string): Promise<string> {
   if (!createResponse.ok) {
     const body = await createResponse.text();
     throw new Error(
-      `Kling API error creating image task (${createResponse.status}): ${body.slice(0, 500)}`
+      `Kling API error creating image task (${createResponse.status}): ${body.slice(0, 500)}`,
     );
   }
 
@@ -138,7 +138,7 @@ export async function generateSceneImage(description: string): Promise<string> {
 
   const finished = await pollTask(
     `${BASE_URL}/v1/images/generations`,
-    created.data.task_id
+    created.data.task_id,
   );
   const imageUrl = finished.data?.task_result?.images?.[0]?.url;
 
@@ -155,7 +155,7 @@ export async function generateSceneImage(description: string): Promise<string> {
  */
 export async function generateVideoFromImage(
   imageUrl: string,
-  description: string
+  description: string,
 ): Promise<string | null> {
   if (isMockMode()) {
     return null;
@@ -177,7 +177,7 @@ export async function generateVideoFromImage(
   if (!createResponse.ok) {
     const body = await createResponse.text();
     throw new Error(
-      `Kling API error creating video task (${createResponse.status}): ${body.slice(0, 500)}`
+      `Kling API error creating video task (${createResponse.status}): ${body.slice(0, 500)}`,
     );
   }
 
@@ -188,7 +188,7 @@ export async function generateVideoFromImage(
 
   const finished = await pollTask(
     `${BASE_URL}/v1/videos/image2video`,
-    created.data.task_id
+    created.data.task_id,
   );
   const videoUrl = finished.data?.task_result?.videos?.[0]?.url;
 
@@ -197,4 +197,82 @@ export async function generateVideoFromImage(
   }
 
   return videoUrl;
+}
+
+// ---------------------------------------------------------------------------
+// Brand Prototype variants — Day 11 evening (Week 3 feature). Same hero
+// scene, 3 different brand-integration styles per dev spec 4.2. Deliberately
+// scoped to ONE scene (not every scene × 3) to keep Kling video-credit spend
+// bounded per test — see 916_progress_status.md 2026-07-01 note.
+// ---------------------------------------------------------------------------
+
+export type VariantLabel = "A" | "B" | "C";
+export type IntegrationStyle = "ambient" | "narrative-native" | "direct";
+
+export const VARIANT_DEFINITIONS: {
+  label: VariantLabel;
+  integrationStyle: IntegrationStyle;
+  modifier: string;
+}[] = [
+  {
+    label: "A",
+    integrationStyle: "ambient",
+    modifier: "Keep the product subtle, visible in the background only.",
+  },
+  {
+    label: "B",
+    integrationStyle: "narrative-native",
+    modifier: "The product should visibly drive the moment of action.",
+  },
+  {
+    label: "C",
+    integrationStyle: "direct",
+    modifier: "Feature the product directly and prominently in the frame.",
+  },
+];
+
+export interface VariantResult {
+  label: VariantLabel;
+  integrationStyle: IntegrationStyle;
+  /** null when this specific variant failed or we're in mock mode — caller
+   * falls back to the still image for that variant, same as the single-video path. */
+  videoUrl: string | null;
+  error?: string;
+}
+
+/**
+ * Generates all 3 Brand Prototype variants for one hero scene, in parallel.
+ * Uses Promise.allSettled (not Promise.all) so one variant's Kling timeout
+ * or failure doesn't wipe out the other two — each variant reports its own
+ * success/error independently, same spirit as the per-scene Retry in Storyboard.
+ */
+export async function generateBrandVariants(
+  imageUrl: string,
+  description: string,
+): Promise<VariantResult[]> {
+  const settled = await Promise.allSettled(
+    VARIANT_DEFINITIONS.map((def) =>
+      generateVideoFromImage(imageUrl, `${description} ${def.modifier}`),
+    ),
+  );
+
+  return VARIANT_DEFINITIONS.map((def, i) => {
+    const result = settled[i];
+    if (result.status === "fulfilled") {
+      return {
+        label: def.label,
+        integrationStyle: def.integrationStyle,
+        videoUrl: result.value,
+      };
+    }
+    return {
+      label: def.label,
+      integrationStyle: def.integrationStyle,
+      videoUrl: null,
+      error:
+        result.reason instanceof Error
+          ? result.reason.message
+          : "Unknown error generating this variant.",
+    };
+  });
 }

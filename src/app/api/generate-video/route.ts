@@ -1,20 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateVideoFromImage } from "@/lib/kling";
+import { generateVideoFromImage, VARIANT_DEFINITIONS } from "@/lib/kling";
+import type { IntegrationStyle } from "@/lib/kling";
 
 interface GenerateVideoBody {
   imageUrl?: string;
   description?: string;
-  variantStyle?: "ambient" | "narrative-native" | "direct";
+  variantStyle?: IntegrationStyle;
 }
 
-const VARIANT_MODIFIERS: Record<
-  NonNullable<GenerateVideoBody["variantStyle"]>,
-  string
-> = {
-  ambient: "Keep the product subtle, visible in the background only.",
-  "narrative-native": "The product should visibly drive the moment of action.",
-  direct: "Feature the product directly and prominently in the frame.",
-};
+// Shares its modifier text with generateBrandVariants (kling.ts) so a single
+// re-generated variant (e.g. Retry after a timeout) uses the exact same
+// prompt wording as the initial parallel batch.
+const VARIANT_MODIFIERS: Record<IntegrationStyle, string> = Object.fromEntries(
+  VARIANT_DEFINITIONS.map((def) => [def.integrationStyle, def.modifier]),
+) as Record<IntegrationStyle, string>;
 
 export async function POST(request: NextRequest) {
   let body: GenerateVideoBody;
@@ -24,19 +23,23 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json(
       { error: "Request body must be valid JSON." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
   if (!body.imageUrl || !body.description) {
     return NextResponse.json(
       { error: "Missing required field(s): imageUrl, description." },
-      { status: 400 }
+      { status: 400 },
     );
   }
 
-  const modifier = body.variantStyle ? VARIANT_MODIFIERS[body.variantStyle] : undefined;
-  const prompt = modifier ? `${body.description} ${modifier}` : body.description;
+  const modifier = body.variantStyle
+    ? VARIANT_MODIFIERS[body.variantStyle]
+    : undefined;
+  const prompt = modifier
+    ? `${body.description} ${modifier}`
+    : body.description;
 
   try {
     const videoUrl = await generateVideoFromImage(body.imageUrl, prompt);
@@ -48,7 +51,9 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[/api/generate-video] failed:", error);
     const message =
-      error instanceof Error ? error.message : "Unknown error generating video.";
+      error instanceof Error
+        ? error.message
+        : "Unknown error generating video.";
     return NextResponse.json({ error: message }, { status: 502 });
   }
 }
