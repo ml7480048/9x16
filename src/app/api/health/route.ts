@@ -7,6 +7,13 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  // Blob-store connections let you pick a custom env prefix, in which case
+  // the token isn't named BLOB_READ_WRITE_TOKEN and @vercel/blob won't find
+  // it — list matching NAMES (never values) to make that diagnosable.
+  const blobTokenNames = Object.keys(process.env).filter((key) =>
+    key.endsWith("_READ_WRITE_TOKEN"),
+  );
+
   return NextResponse.json({
     ok: true,
     env: {
@@ -14,6 +21,7 @@ export async function GET() {
       kling: !!process.env.KLING_API_KEY,
       postgres: !!process.env.POSTGRES_URL,
       blob: !!process.env.BLOB_READ_WRITE_TOKEN,
+      blobTokenNames,
       adminAuth: !!process.env.ADMIN_USER && !!process.env.ADMIN_PASSWORD,
     },
   });
