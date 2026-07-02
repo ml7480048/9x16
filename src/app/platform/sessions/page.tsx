@@ -43,7 +43,7 @@ export default function SessionsPage() {
   }
 
   return (
-    <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-6 py-16">
+    <div className="animate-fade-in mx-auto flex w-full max-w-md flex-1 flex-col gap-8 px-6 py-16">
       <h1 className="font-[family-name:var(--font-display)] text-4xl leading-[0.95] text-text-primary">
         Sessions
       </h1>

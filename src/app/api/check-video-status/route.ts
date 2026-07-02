@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkVideoTaskStatus } from "@/lib/kling";
+import { persistRemoteAsset } from "@/lib/storage";
 
 interface CheckVideoStatusBody {
   taskId?: string;
@@ -31,6 +32,10 @@ export async function POST(request: NextRequest) {
 
   try {
     const result = await checkVideoTaskStatus(body.taskId);
+    // Recovered videos need the same permanence as first-try ones.
+    if (result.status === "succeed" && result.videoUrl) {
+      result.videoUrl = await persistRemoteAsset(result.videoUrl, "video");
+    }
     return NextResponse.json(result);
   } catch (error) {
     console.error("[/api/check-video-status] failed:", error);

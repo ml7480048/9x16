@@ -318,9 +318,14 @@ export function PrototypeViewer({
             switching must be instant". Rendering only the active one meant a
             full video reload on every tab switch. */}
         {variants.map((variant) => (
+          // animate-fade-in restarts whenever the wrapper leaves
+          // display:none, so each A/B/C switch gets the subtle fade without
+          // remounting (which would throw away the preloaded videos).
           <div
             key={variant.label}
-            className={variant.label === active.label ? "" : "hidden"}
+            className={
+              variant.label === active.label ? "animate-fade-in" : "hidden"
+            }
           >
             <VerticalPlayer
               videoUrl={variant.videoUrl}

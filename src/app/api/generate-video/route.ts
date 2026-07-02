@@ -5,6 +5,8 @@ import {
   VARIANT_DEFINITIONS,
 } from "@/lib/kling";
 import type { ClipDuration, IntegrationStyle } from "@/lib/kling";
+import { enforceQuota } from "@/lib/quota";
+import { persistRemoteAsset } from "@/lib/storage";
 
 // Must exceed kling.ts's POLL_TIMEOUT_MS (270s) or Vercel would kill the
 // function with a generic timeout instead of our own clear error; 290s
@@ -54,6 +56,9 @@ export async function POST(request: NextRequest) {
     ? `${modifier} Scene: ${body.description}`
     : body.description;
 
+  const quotaError = await enforceQuota(request, "video");
+  if (quotaError) return quotaError;
+
   const duration: ClipDuration = body.duration === "10" ? "10" : "5";
 
   try {
@@ -62,9 +67,14 @@ export async function POST(request: NextRequest) {
       prompt,
       duration,
     );
+    // Copy into Vercel Blob (time-boxed inside persistRemoteAsset so it
+    // can't push this function past maxDuration after a long Kling poll).
+    const permanentUrl = videoUrl
+      ? await persistRemoteAsset(videoUrl, "video")
+      : videoUrl;
     return NextResponse.json({
-      videoUrl,
-      status: videoUrl ? "complete" : "mock",
+      videoUrl: permanentUrl,
+      status: permanentUrl ? "complete" : "mock",
       duration: Number(duration),
     });
   } catch (error) {

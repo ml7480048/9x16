@@ -181,8 +181,15 @@ export function sessionStatus(session: StoredSession): SessionStatus {
     : "in-progress";
 }
 
-/** True when the session is old enough that its Kling media may be gone. */
+/** True when the session is old enough that its Kling media may be gone.
+ * Media persisted to Vercel Blob (2026-07-02+) doesn't expire — only warn
+ * when something still points at Kling's CDN. */
 export function mediaLikelyExpired(session: StoredSession): boolean {
   const ageMs = Date.now() - new Date(session.createdAt).getTime();
-  return ageMs > MEDIA_EXPIRY_DAYS * 24 * 60 * 60 * 1000;
+  if (ageMs <= MEDIA_EXPIRY_DAYS * 24 * 60 * 60 * 1000) return false;
+  const urls = [
+    ...Object.values(session.images).map((image) => image.url),
+    ...(session.variants ?? []).flatMap((v) => [v.videoUrl, v.imageUrl]),
+  ];
+  return urls.some((url) => url?.includes("klingai.com"));
 }

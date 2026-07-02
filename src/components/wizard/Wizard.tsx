@@ -159,6 +159,11 @@ export function Wizard() {
     <div className="mx-auto flex w-full max-w-md flex-1 flex-col gap-8 py-10">
       <StepIndicator currentStep={step} onStepSelect={setStep} />
 
+      {/* Keyed on step so each step change remounts the wrapper and re-runs
+          the fade — the design system's only sanctioned motion (subtle fade,
+          nothing bouncy). Step components already remounted on change via
+          the conditional renders, so the key adds no new unmount behavior. */}
+      <div key={step} className="animate-fade-in flex flex-1 flex-col">
       {step === 1 && <BrandInputForm data={data} onChange={update} />}
       {step === 2 && <VisualSetupForm data={data} onChange={update} />}
       {step === 3 && (
@@ -200,6 +205,7 @@ export function Wizard() {
           }
         />
       )}
+      </div>
 
       <div className="mt-auto flex justify-between gap-3">
         {/* Back points the other way, so it gets a manual ← instead of the

@@ -38,7 +38,9 @@ export default function DemoPage() {
           {VARIANT_DEFINITIONS.map((variant) => (
             <div
               key={variant.label}
-              className={variant.label === activeLabel ? "" : "hidden"}
+              className={
+                variant.label === activeLabel ? "animate-fade-in" : "hidden"
+              }
             >
               <VerticalPlayer
                 videoUrl={DEMO_CLIPS[variant.label]}

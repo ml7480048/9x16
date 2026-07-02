@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateScript, type SceneDraft } from "@/lib/anthropic";
+import { enforceQuota } from "@/lib/quota";
 import type { NarrativeFormat, SceneMood } from "@/lib/types";
 
 interface GenerateScriptBody {
@@ -47,6 +48,9 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+
+  const quotaError = await enforceQuota(request, "script");
+  if (quotaError) return quotaError;
 
   try {
     const script = await generateScript(

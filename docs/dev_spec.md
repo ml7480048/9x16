@@ -301,6 +301,7 @@ NEXT_PUBLIC_APP_URL=https://9x16.at
 POSTGRES_URL=           # from Vercel Marketplace Postgres integration (e.g. Neon) — powers lead capture
 ADMIN_USER=             # Basic Auth for /platform/leads
 ADMIN_PASSWORD=         # Basic Auth for /platform/leads — change from the .env.local placeholder before real use
+BLOB_READ_WRITE_TOKEN=  # injected by Vercel when a Blob store is connected (Storage → Blob) — permanent media storage; without it Kling's expiring URLs are used as-is
 ```
 
 (`GEMINI_API_KEY`, `RUNWAY_API_KEY` — deprecated, no longer read by any code. See section 5.)

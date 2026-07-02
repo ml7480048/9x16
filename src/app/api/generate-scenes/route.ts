@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateSceneDescriptions } from "@/lib/anthropic";
+import { enforceQuota } from "@/lib/quota";
 import type { NarrativeFormat, SceneMood } from "@/lib/types";
 
 interface GenerateScenesBody {
@@ -48,6 +49,9 @@ export async function POST(request: NextRequest) {
       { status: 400 },
     );
   }
+
+  const quotaError = await enforceQuota(request, "scenes");
+  if (quotaError) return quotaError;
 
   try {
     const scenes = await generateSceneDescriptions(
