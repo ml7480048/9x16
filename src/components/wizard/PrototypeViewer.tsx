@@ -20,7 +20,13 @@ interface PrototypeViewerProps {
    * successfully generated image if nothing was explicitly chosen yet. */
   heroSceneId: string | null;
   variants: VariantResult[] | null;
-  onVariantsReady: (variants: VariantResult[]) => void;
+  /** Scene the current variants were generated from — compared against the
+   * (possibly re-chosen) Money Shot to flag stale variants. */
+  variantsSceneId: string | null;
+  onVariantsReady: (
+    variants: VariantResult[],
+    sourceSceneId: string,
+  ) => void;
   activeLabel: VariantLabel;
   onActiveLabelChange: (label: VariantLabel) => void;
   /** Kling clip length from the Step 2 episode-length choice ("5" | "10"). */
@@ -39,6 +45,7 @@ export function PrototypeViewer({
   images,
   heroSceneId,
   variants,
+  variantsSceneId,
   onVariantsReady,
   activeLabel,
   onActiveLabelChange,
@@ -86,7 +93,7 @@ export function PrototypeViewer({
         const data = await res.json();
         if (!res.ok)
           throw new Error(data.error ?? "Failed to generate variants.");
-        onVariantsReady(data.variants as VariantResult[]);
+        onVariantsReady(data.variants as VariantResult[], heroScene.id);
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Something went wrong.");
@@ -142,7 +149,9 @@ export function PrototypeViewer({
                   }
                 : v,
             );
-            onVariantsReady(updated);
+            // A recovered task belongs to the same generation batch — keep
+            // its original source scene rather than the current hero.
+            onVariantsReady(updated, variantsSceneId ?? heroScene?.id ?? "");
           } else if (data.status === "processing") {
             setCheckMessage({
               label: variant.label,
@@ -163,7 +172,7 @@ export function PrototypeViewer({
         })
         .finally(() => setCheckingLabel(null));
     },
-    [variants, onVariantsReady],
+    [variants, onVariantsReady, variantsSceneId, heroScene],
   );
 
   if (loading)
@@ -186,8 +195,24 @@ export function PrototypeViewer({
 
   const active = variants.find((v) => v.label === activeLabel) ?? variants[0];
 
+  // The client changed the Money Shot on Storyboard AFTER these variants
+  // were generated. Deliberately NOT auto-regenerating (3 video credits) —
+  // show the mismatch and let them decide via the Regenerate button.
+  const staleVariants =
+    !!variantsSceneId && !!heroScene && variantsSceneId !== heroScene.id;
+  const variantsSourceScene = staleVariants
+    ? scenes.find((scene) => scene.id === variantsSceneId)
+    : undefined;
+
   return (
     <div className="flex flex-col gap-4">
+      {staleVariants && heroScene && (
+        <p className="text-center text-xs text-accent">
+          These variants were generated from Scene{" "}
+          {variantsSourceScene?.order ?? "?"}, but Scene {heroScene.order} is
+          now the Money Shot — use Regenerate below to re-create them.
+        </p>
+      )}
       {usedFallback && heroScene && (
         <p className="text-center text-xs text-text-secondary">
           Using Scene {heroScene.order} as the money shot (no explicit choice

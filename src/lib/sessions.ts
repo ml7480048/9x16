@@ -29,6 +29,12 @@ export interface StoredSession {
   script: EpisodeScript | null;
   images: SceneImages;
   variants: VariantResult[] | null;
+  /** Which scene the variants were generated FROM — lets Step 5 detect
+   * that the client changed the Money Shot after generating and offer an
+   * explicit Regenerate instead of silently showing stale variants.
+   * Optional: sessions saved before this field existed simply skip the
+   * staleness check. */
+  variantsSceneId?: string | null;
   activeVariantLabel: VariantLabel;
   heroSceneId: string | null;
 }

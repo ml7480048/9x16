@@ -134,6 +134,61 @@ function parseJson<T>(raw: string): T {
   }
 }
 
+// parseJson only guarantees valid JSON, not the right shape — Claude
+// occasionally returns structurally-off output, which used to surface as a
+// cryptic crash further down the wizard. Missing ids/order/moods are
+// repairable; a missing description/action is a real failure worth a clear
+// error (surfaced in the step's ErrorState with a Retry).
+function normalizeSceneDrafts(raw: unknown): SceneDraft[] {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    throw new Error("Claude returned no scenes (unexpected response shape).");
+  }
+  return raw.map((item, i) => {
+    const o = (item ?? {}) as Record<string, unknown>;
+    if (typeof o.description !== "string" || !o.description.trim()) {
+      throw new Error(
+        `Scene ${i + 1} from Claude is missing its description (unexpected response shape).`,
+      );
+    }
+    return {
+      id: typeof o.id === "string" && o.id ? o.id : `scene-${i + 1}`,
+      order: typeof o.order === "number" ? o.order : i + 1,
+      description: o.description,
+      visualMood: typeof o.visualMood === "string" ? o.visualMood : "",
+    };
+  });
+}
+
+function normalizeScript(raw: unknown): EpisodeScript {
+  const o = (raw ?? {}) as Record<string, unknown>;
+  if (!Array.isArray(o.scenes) || o.scenes.length === 0) {
+    throw new Error(
+      "Claude returned a script with no scenes (unexpected response shape).",
+    );
+  }
+  return {
+    title:
+      typeof o.title === "string" && o.title.trim()
+        ? o.title
+        : "Untitled Prototype",
+    scenes: o.scenes.map((item, i) => {
+      const sc = (item ?? {}) as Record<string, unknown>;
+      if (typeof sc.action !== "string" || !sc.action.trim()) {
+        throw new Error(
+          `Script scene ${i + 1} from Claude is missing its action text (unexpected response shape).`,
+        );
+      }
+      return {
+        sceneNumber:
+          typeof sc.sceneNumber === "number" ? sc.sceneNumber : i + 1,
+        action: sc.action,
+        brandIntegration:
+          typeof sc.brandIntegration === "string" ? sc.brandIntegration : "",
+      };
+    }),
+  };
+}
+
 function describeBrand(brand: BrandInput): string {
   return [
     `Brand name: ${brand.brandName}`,
@@ -246,7 +301,7 @@ Respond with ONLY a raw JSON array (no markdown fences, no commentary), where ea
 "description" should be a concise visual/action description (1-2 sentences) suitable as an image generation prompt. "visualMood" should be a short phrase (e.g. "warm morning light, handheld").`;
 
   const raw = await callClaude(prompt, 1600);
-  return parseJson<SceneDraft[]>(raw);
+  return normalizeSceneDrafts(parseJson<unknown>(raw));
 }
 
 /** Step 4 — generates the episode script with brand integration, scene by scene. */
@@ -278,7 +333,7 @@ Respond with ONLY raw JSON (no markdown fences, no commentary) in this shape:
 { "title": string, "scenes": [{ "sceneNumber": number, "action": string, "brandIntegration": string }] }`;
 
   const raw = await callClaude(prompt, 2500);
-  return parseJson<EpisodeScript>(raw);
+  return normalizeScript(parseJson<unknown>(raw));
 }
 
 /** Agent 2 — recommends the best narrative format for a brand profile. */

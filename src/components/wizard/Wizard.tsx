@@ -34,6 +34,7 @@ export function Wizard() {
   const [script, setScript] = useState<EpisodeScript | null>(null);
   const [images, setImages] = useState<SceneImages>({});
   const [variants, setVariants] = useState<VariantResult[] | null>(null);
+  const [variantsSceneId, setVariantsSceneId] = useState<string | null>(null);
   const [activeVariantLabel, setActiveVariantLabel] =
     useState<VariantLabel>("A");
   const [heroSceneId, setHeroSceneId] = useState<string | null>(null);
@@ -74,6 +75,7 @@ export function Wizard() {
         setScript(persisted.script);
         setImages(persisted.images ?? {});
         setVariants(persisted.variants ?? null);
+        setVariantsSceneId(persisted.variantsSceneId ?? null);
         setActiveVariantLabel(persisted.activeVariantLabel ?? "A");
         setHeroSceneId(persisted.heroSceneId ?? null);
       } else {
@@ -105,6 +107,7 @@ export function Wizard() {
       script,
       images,
       variants,
+      variantsSceneId,
       activeVariantLabel,
       heroSceneId,
     });
@@ -118,6 +121,7 @@ export function Wizard() {
     script,
     images,
     variants,
+    variantsSceneId,
     activeVariantLabel,
     heroSceneId,
   ]);
@@ -182,7 +186,11 @@ export function Wizard() {
           images={images}
           heroSceneId={heroSceneId}
           variants={variants}
-          onVariantsReady={setVariants}
+          variantsSceneId={variantsSceneId}
+          onVariantsReady={(v, sourceSceneId) => {
+            setVariants(v);
+            setVariantsSceneId(sourceSceneId);
+          }}
           activeLabel={activeVariantLabel}
           onActiveLabelChange={setActiveVariantLabel}
           clipDuration={
