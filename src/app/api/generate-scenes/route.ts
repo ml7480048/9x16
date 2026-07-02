@@ -10,6 +10,9 @@ interface GenerateScenesBody {
   campaignGoal?: string;
   sceneMood?: string;
   selectedFormat?: string;
+  // From the Step 2 episode-length choice. Optional (older sessions):
+  // omitted → the prompt's original 4-6 range.
+  sceneCount?: number;
 }
 
 // sceneMood/selectedFormat are required too — Step 2 validation guarantees
@@ -59,6 +62,11 @@ export async function POST(request: NextRequest) {
         sceneMood: body.sceneMood as SceneMood,
         selectedFormat: body.selectedFormat as NarrativeFormat,
       },
+      // Clamp to a sane band so a hand-crafted request can't ask Claude for
+      // 50 scenes (each one later costs a Kling image credit).
+      typeof body.sceneCount === "number"
+        ? Math.max(2, Math.min(8, Math.floor(body.sceneCount)))
+        : undefined,
     );
 
     return NextResponse.json({ scenes });

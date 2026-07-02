@@ -234,13 +234,18 @@ export async function generateSceneImage(
   return imageUrl;
 }
 
+export type ClipDuration = "5" | "10";
+
 /**
  * Generates a vertical (9:16) video clip from a scene image + description.
  * Returns `null` in mock mode — caller should fall back to the still image.
+ * `duration` — Kling supports exactly 5s or 10s clips; 10s costs roughly
+ * double the video credits (episode-length feature, 2026-07-02).
  */
 export async function generateVideoFromImage(
   imageUrl: string,
   description: string,
+  duration: ClipDuration = "5",
 ): Promise<string | null> {
   if (isMockMode()) {
     return null;
@@ -254,7 +259,7 @@ export async function generateVideoFromImage(
       image: imageUrl,
       prompt: description,
       mode: "std",
-      duration: "5",
+      duration,
       aspect_ratio: "9:16",
     }),
   });
@@ -347,12 +352,17 @@ export interface VariantResult {
 export async function generateBrandVariants(
   imageUrl: string,
   description: string,
+  duration: ClipDuration = "5",
 ): Promise<VariantResult[]> {
   const settled = await Promise.allSettled(
     VARIANT_DEFINITIONS.map((def) =>
       // Modifier first (primary instruction), scene description as context
       // after — front-loading gives it more weight than appending it.
-      generateVideoFromImage(imageUrl, `${def.modifier} Scene: ${description}`),
+      generateVideoFromImage(
+        imageUrl,
+        `${def.modifier} Scene: ${description}`,
+        duration,
+      ),
     ),
   );
 

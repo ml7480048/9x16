@@ -7,7 +7,7 @@ import { VerticalPlayer } from "@/components/player/VerticalPlayer";
 import { VariantSwitcher } from "@/components/player/VariantSwitcher";
 import type { SceneDraft } from "@/lib/anthropic";
 import type { SceneImages } from "@/lib/types";
-import type { VariantLabel, VariantResult } from "@/lib/kling";
+import type { ClipDuration, VariantLabel, VariantResult } from "@/lib/kling";
 
 const hasAnyFailure = (variants: VariantResult[]) =>
   variants.some((v) => !v.videoUrl);
@@ -23,6 +23,8 @@ interface PrototypeViewerProps {
   onVariantsReady: (variants: VariantResult[]) => void;
   activeLabel: VariantLabel;
   onActiveLabelChange: (label: VariantLabel) => void;
+  /** Kling clip length from the Step 2 episode-length choice ("5" | "10"). */
+  clipDuration: ClipDuration;
 }
 
 /**
@@ -40,6 +42,7 @@ export function PrototypeViewer({
   onVariantsReady,
   activeLabel,
   onActiveLabelChange,
+  clipDuration,
 }: PrototypeViewerProps) {
   const [loading, setLoading] = useState(!variants);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +79,7 @@ export function PrototypeViewer({
       body: JSON.stringify({
         imageUrl: heroImageUrl,
         description: heroScene.description,
+        duration: clipDuration,
       }),
     })
       .then(async (res) => {

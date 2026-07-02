@@ -89,6 +89,11 @@ Step 1 — Brand Input
 
 Step 2 — Visual Setup
   Select: Color palette, scene mood (urban/domestic/outdoor/abstract)
+  Select: Episode length (~15s / ~30s / ~60s) — added 2026-07-02; maps to a
+          (sceneCount × clipDuration) pair since Kling only does 5s/10s clips:
+          15s = 3×5s, 30s = 6×5s, 60s = 6×10s (10s clips ≈ 2× video credits).
+          Config: EPISODE_LENGTH_CONFIG in types.ts. sceneCount feeds the
+          Claude scene prompt, clipDuration feeds Kling image2video.
   Select: Narrative format (Slice of Life / Thriller / Comedy)
 
 Step 3 — Image Generation

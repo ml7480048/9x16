@@ -3,7 +3,13 @@
 import { ReactNode } from "react";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
-import type { NarrativeFormat, SceneMood, WizardFormData } from "@/lib/types";
+import {
+  EPISODE_LENGTH_CONFIG,
+  type EpisodeLength,
+  type NarrativeFormat,
+  type SceneMood,
+  type WizardFormData,
+} from "@/lib/types";
 
 interface VisualSetupFormProps {
   data: WizardFormData;
@@ -56,6 +62,31 @@ export function VisualSetupForm({ data, onChange }: VisualSetupFormProps) {
               </span>
             </SelectableCard>
           ))}
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-3">
+        <label className="text-sm text-text-secondary">Episode length</label>
+        <div className="grid grid-cols-3 gap-3">
+          {(Object.keys(EPISODE_LENGTH_CONFIG) as EpisodeLength[]).map(
+            (value) => {
+              const config = EPISODE_LENGTH_CONFIG[value];
+              return (
+                <SelectableCard
+                  key={value}
+                  selected={data.episodeLength === value}
+                  onClick={() => onChange({ episodeLength: value })}
+                >
+                  <span className="text-sm font-medium text-text-primary">
+                    {config.label}
+                  </span>
+                  <span className="text-xs leading-4 text-text-secondary">
+                    {config.description}
+                  </span>
+                </SelectableCard>
+              );
+            },
+          )}
         </div>
       </div>
 

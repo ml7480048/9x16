@@ -213,14 +213,24 @@ function mockFormatMatch(brand: BrandInput): FormatMatch {
   };
 }
 
-/** Step 3 — generates 4-6 scene descriptions for the episode prototype. */
+/**
+ * Step 3 — generates scene descriptions for the episode prototype.
+ * `sceneCount` comes from the Step 2 episode-length choice; omitted (older
+ * sessions) falls back to the original 4-6 range.
+ */
 export async function generateSceneDescriptions(
   brand: BrandInput,
   visual: VisualInput,
+  sceneCount?: number,
 ): Promise<SceneDraft[]> {
   if (isMockMode()) {
-    return mockSceneDescriptions(brand);
+    const scenes = mockSceneDescriptions(brand);
+    return sceneCount ? scenes.slice(0, sceneCount) : scenes;
   }
+
+  const countInstruction = sceneCount
+    ? `exactly ${sceneCount} scenes`
+    : "4 to 6 scenes";
 
   const prompt = `You are the Prototype Agent for 9×16, a platform that creates AI-generated vertical (9:16) branded micro-drama episode prototypes.
 
@@ -228,7 +238,7 @@ Brand input:
 ${describeBrand(brand)}
 ${describeVisual(visual)}
 
-Generate 4 to 6 scenes for a 30-60 second vertical video episode that organically features this brand. Each scene should be a single cinematic beat. Follow the scene setting and narrative format above — they are the client's explicit choices, not suggestions.
+Generate ${countInstruction} for a short vertical video episode that organically features this brand. Each scene should be a single cinematic beat. Follow the scene setting and narrative format above — they are the client's explicit choices, not suggestions.
 
 Respond with ONLY a raw JSON array (no markdown fences, no commentary), where each element has this shape:
 { "id": string, "order": number, "description": string, "visualMood": string }

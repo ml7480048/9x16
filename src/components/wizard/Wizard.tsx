@@ -10,6 +10,7 @@ import { ScriptViewer } from "./ScriptViewer";
 import { PrototypeViewer } from "./PrototypeViewer";
 import {
   emptyWizardFormData,
+  EPISODE_LENGTH_CONFIG,
   type SceneImages,
   type WizardFormData,
 } from "@/lib/types";
@@ -65,7 +66,10 @@ export function Wizard() {
         setSessionId(persisted.id);
         setCurrentSessionId(persisted.id);
         setStep(persisted.step);
-        setData(persisted.data);
+        // Spread over the empty template so sessions saved before a field
+        // existed (e.g. episodeLength) restore as "" rather than undefined —
+        // undefined would slip past the `!== ""` step validation.
+        setData({ ...emptyWizardFormData, ...persisted.data });
         setScenes(persisted.scenes);
         setScript(persisted.script);
         setImages(persisted.images ?? {});
@@ -129,7 +133,10 @@ export function Wizard() {
     data.audience.trim() !== "" &&
     data.campaignGoal.trim() !== "";
 
-  const step2Valid = data.sceneMood !== "" && data.selectedFormat !== "";
+  const step2Valid =
+    data.sceneMood !== "" &&
+    data.selectedFormat !== "" &&
+    data.episodeLength !== "";
   const step3Valid = scenes !== null;
   const step4Valid = script !== null;
 
@@ -178,6 +185,11 @@ export function Wizard() {
           onVariantsReady={setVariants}
           activeLabel={activeVariantLabel}
           onActiveLabelChange={setActiveVariantLabel}
+          clipDuration={
+            data.episodeLength
+              ? EPISODE_LENGTH_CONFIG[data.episodeLength].clipDuration
+              : "5"
+          }
         />
       )}
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateVideoFromImage, VARIANT_DEFINITIONS } from "@/lib/kling";
-import type { IntegrationStyle } from "@/lib/kling";
+import type { ClipDuration, IntegrationStyle } from "@/lib/kling";
 
 // See generate-variants/route.ts for why this needs to exceed kling.ts's
 // POLL_TIMEOUT_MS (270s).
@@ -10,6 +10,8 @@ interface GenerateVideoBody {
   imageUrl?: string;
   description?: string;
   variantStyle?: IntegrationStyle;
+  // "5" | "10" — Kling's only supported clip lengths. Optional, defaults "5".
+  duration?: string;
 }
 
 // Shares its modifier text with generateBrandVariants (kling.ts) so a single
@@ -48,12 +50,18 @@ export async function POST(request: NextRequest) {
     ? `${modifier} Scene: ${body.description}`
     : body.description;
 
+  const duration: ClipDuration = body.duration === "10" ? "10" : "5";
+
   try {
-    const videoUrl = await generateVideoFromImage(body.imageUrl, prompt);
+    const videoUrl = await generateVideoFromImage(
+      body.imageUrl,
+      prompt,
+      duration,
+    );
     return NextResponse.json({
       videoUrl,
       status: videoUrl ? "complete" : "mock",
-      duration: 5,
+      duration: Number(duration),
     });
   } catch (error) {
     console.error("[/api/generate-video] failed:", error);

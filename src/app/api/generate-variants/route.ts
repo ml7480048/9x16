@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateBrandVariants } from "@/lib/kling";
+import { generateBrandVariants, type ClipDuration } from "@/lib/kling";
 
 // Kling video generation can take a few minutes; must exceed kling.ts's own
 // POLL_TIMEOUT_MS (270s) or Vercel would kill the function first with a
@@ -10,6 +10,9 @@ export const maxDuration = 290;
 interface GenerateVariantsBody {
   imageUrl?: string;
   description?: string;
+  // "5" | "10" — Kling's only supported clip lengths. Optional: defaults
+  // to "5" (pre-episode-length sessions don't send it).
+  duration?: string;
 }
 
 /**
@@ -36,6 +39,11 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const variants = await generateBrandVariants(body.imageUrl, body.description);
+  const duration: ClipDuration = body.duration === "10" ? "10" : "5";
+  const variants = await generateBrandVariants(
+    body.imageUrl,
+    body.description,
+    duration,
+  );
   return NextResponse.json({ variants });
 }

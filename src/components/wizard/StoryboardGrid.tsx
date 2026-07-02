@@ -13,7 +13,11 @@ import { Textarea } from "@/components/ui/Textarea";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import type { SceneDraft } from "@/lib/anthropic";
-import type { SceneImages, WizardFormData } from "@/lib/types";
+import {
+  EPISODE_LENGTH_CONFIG,
+  type SceneImages,
+  type WizardFormData,
+} from "@/lib/types";
 
 interface StoryboardGridProps {
   brandData: WizardFormData;
@@ -62,6 +66,9 @@ export function StoryboardGrid({
         campaignGoal: brandData.campaignGoal,
         sceneMood: brandData.sceneMood,
         selectedFormat: brandData.selectedFormat,
+        sceneCount: brandData.episodeLength
+          ? EPISODE_LENGTH_CONFIG[brandData.episodeLength].sceneCount
+          : undefined,
       }),
     })
       .then(async (res) => {
