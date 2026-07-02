@@ -5,13 +5,16 @@
 
 ## 1. Project Overview
 
-**Product:** 9×16 (916) — a web-based AI content testing platform for branded vertical video (micro-dramas).
+**Company (updated 2026-07-02, per Marian):** 9×16 is first and foremost a **video production studio** — its core business is producing branded advertising series (vertical serials) for social media. That has always been the founding goal.
+
+**This product:** the AI content testing platform is 9×16's companion product / "фішка" — a super add-on to the studio, not the main business. Strategically it is a sales funnel: a brand tests an AI-generated prototype cheaply → compares brand-integration variants → orders the real production from the studio. The `/player` (Verticals) showcase of actually-produced series and the company-level site positioning carry equal weight with the wizard.
+
 **Domain:** 9x16.at
 **Market:** DACH (Germany, Austria, Switzerland)
 **Stack Target:** React frontend + Node/Express backend (or Next.js fullstack)
 **Design Language:** Dark premium, accent color `#FF3C00` (orange)
 
-The platform lets brands test AI-generated narrative video prototypes before committing to full production. Core loop: brand inputs → AI generates episode prototype → client compares brand integration variants → selects preferred version for production.
+The platform lets brands test AI-generated narrative video prototypes before committing to full production. Core loop: brand inputs → AI generates episode prototype → client compares brand integration variants → selects preferred version for production (by the studio).
 
 ---
 
