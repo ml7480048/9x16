@@ -36,7 +36,11 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
-  if (!pathname.startsWith("/platform/leads")) {
+  // Basic Auth guard — admin surfaces: leads table + ops health check.
+  if (
+    !pathname.startsWith("/platform/leads") &&
+    !pathname.startsWith("/api/health")
+  ) {
     return NextResponse.next();
   }
 
@@ -74,5 +78,6 @@ export const config = {
     "/api/generate-image/:path*",
     "/api/generate-video/:path*",
     "/api/check-video-status/:path*",
+    "/api/health/:path*",
   ],
 };
