@@ -118,6 +118,16 @@ Step 5 — Video Preview
 - Variant C: Direct / explicit (product featured in dialogue/action)
 - UI: Tab or swipe switcher between variants, video reloads on switch
 - This is the core sales tool — must feel premium and instant
+- **v3 generation flow (2026-07-02, third iteration):** each variant gets
+  its OWN start image — integration style is baked into the IMAGE prompt
+  (`imageModifier` in `VARIANT_DEFINITIONS`), then image2video animates it
+  with a matching motion prompt. v1 (abstract wording) and v2 (concrete
+  camera instructions) both produced near-identical clips because all three
+  animated the same start frame. Client-orchestrated in `PrototypeViewer`
+  (phase 1: 3 images in parallel; phase 2: 3 videos in parallel) — a serial
+  image+video chain server-side would exceed Vercel's 300s cap. The old
+  `/api/generate-variants` route and `generateBrandVariants()` are removed;
+  `/api/generate-video` returns `taskId` on poll timeout for "Check again".
 
 ### 4.3 Pages / Routes
 

@@ -132,7 +132,7 @@ export default function SessionDetailPage() {
               >
                 <VerticalPlayer
                   videoUrl={variant.videoUrl}
-                  posterUrl={heroImageUrl}
+                  posterUrl={variant.imageUrl ?? heroImageUrl}
                   label={`Variant ${variant.label} preview`}
                   active={variant.label === activeLabel}
                 />

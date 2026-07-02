@@ -299,40 +299,59 @@ export async function generateVideoFromImage(
 export type VariantLabel = "A" | "B" | "C";
 export type IntegrationStyle = "ambient" | "narrative-native" | "direct";
 
-// Modifiers rewritten 2026-07-01 after a real test showed all 3 variants
-// looking nearly identical. Original wording ("keep subtle", "drives the
-// action") was too abstract for a 5s image-to-video clip to visibly act on,
-// and was appended AFTER the scene description — likely diluted. Rewritten
-// as concrete camera/action instructions and moved to the FRONT of the
-// prompt (see generateBrandVariants) so Kling weights them more heavily.
+// THIRD iteration on variant differentiation (2026-07-02). History:
+// v1 abstract wording ("keep subtle") — variants nearly identical;
+// v2 concrete camera/action instructions front-loaded — STILL nearly
+// identical, because all 3 clips animated from the SAME start image and a
+// 5s image2video clip can't diverge far from an identical first frame.
+// v3 (current): each variant now gets its OWN start image — the
+// integration style is baked into the image prompt (`imageModifier`), so
+// the difference is visible from frame one; `modifier` then matches the
+// motion to that framing. Orchestrated client-side in PrototypeViewer
+// (two phases: 3 images in parallel, then 3 videos in parallel) — a
+// serial image+video chain server-side would blow Vercel's 300s cap.
 export const VARIANT_DEFINITIONS: {
   label: VariantLabel;
   integrationStyle: IntegrationStyle;
+  /** Baked into the per-variant START IMAGE prompt — the actual source of
+   * visible differentiation between A/B/C. */
+  imageModifier: string;
+  /** Motion instruction for image2video, matched to the start framing. */
   modifier: string;
 }[] = [
   {
     label: "A",
     integrationStyle: "ambient",
+    imageModifier:
+      "The product sits small and softly out-of-focus in the background of the frame; a human moment is the clear subject in the foreground.",
     modifier:
       "Camera holds a wide, gently drifting shot. The product stays soft and out-of-focus in the background the entire time — never the subject.",
   },
   {
     label: "B",
     integrationStyle: "narrative-native",
+    imageModifier:
+      "A person's hands are actively reaching for and gripping the product mid-action, product held naturally at the center of the story moment.",
     modifier:
-      "Midway through the clip, the camera follows a hand reaching for and picking up the product — this pickup becomes the central action of the shot.",
+      "The camera follows the hands as they lift and use the product — this action is the center of the shot from start to finish.",
   },
   {
     label: "C",
     integrationStyle: "direct",
+    imageModifier:
+      "Tight hero close-up of the product itself, branding and label clearly readable, product filling most of the frame, premium studio-grade lighting.",
     modifier:
-      "Camera pushes into a tight close-up on the product itself, label facing the viewer, held steady and clearly in focus for most of the clip.",
+      "Camera pushes slowly into the product close-up, label facing the viewer, held steady and clearly in focus for the entire clip.",
   },
 ];
 
 export interface VariantResult {
   label: VariantLabel;
   integrationStyle: IntegrationStyle;
+  /** This variant's own styled start image (v3 differentiation) — also the
+   * player poster. Absent on sessions generated before 2026-07-02, which
+   * shared the hero scene's image across all three. */
+  imageUrl?: string;
   /** null when this specific variant failed or we're in mock mode — caller
    * falls back to the still image for that variant, same as the single-video path. */
   videoUrl: string | null;
@@ -343,48 +362,9 @@ export interface VariantResult {
   taskId?: string;
 }
 
-/**
- * Generates all 3 Brand Prototype variants for one hero scene, in parallel.
- * Uses Promise.allSettled (not Promise.all) so one variant's Kling timeout
- * or failure doesn't wipe out the other two — each variant reports its own
- * success/error independently, same spirit as the per-scene Retry in Storyboard.
- */
-export async function generateBrandVariants(
-  imageUrl: string,
-  description: string,
-  duration: ClipDuration = "5",
-): Promise<VariantResult[]> {
-  const settled = await Promise.allSettled(
-    VARIANT_DEFINITIONS.map((def) =>
-      // Modifier first (primary instruction), scene description as context
-      // after — front-loading gives it more weight than appending it.
-      generateVideoFromImage(
-        imageUrl,
-        `${def.modifier} Scene: ${description}`,
-        duration,
-      ),
-    ),
-  );
-
-  return VARIANT_DEFINITIONS.map((def, i) => {
-    const result = settled[i];
-    if (result.status === "fulfilled") {
-      return {
-        label: def.label,
-        integrationStyle: def.integrationStyle,
-        videoUrl: result.value,
-      };
-    }
-    const reason = result.reason;
-    return {
-      label: def.label,
-      integrationStyle: def.integrationStyle,
-      videoUrl: null,
-      error:
-        reason instanceof Error
-          ? reason.message
-          : "Unknown error generating this variant.",
-      taskId: reason instanceof KlingTimeoutError ? reason.taskId : undefined,
-    };
-  });
-}
+// generateBrandVariants (server-side 3-video batch) was removed 2026-07-02:
+// the v3 per-variant-start-image flow chains image + video per variant,
+// which doesn't fit inside one Vercel function invocation — PrototypeViewer
+// now orchestrates the phases client-side via /api/generate-image and
+// /api/generate-video (which reports KlingTimeoutError taskIds for the
+// "Check again" recovery path).

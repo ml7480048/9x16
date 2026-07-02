@@ -20,7 +20,6 @@ const AI_API_PREFIXES = [
   "/api/generate-script",
   "/api/generate-image",
   "/api/generate-video",
-  "/api/generate-variants",
   "/api/check-video-status",
 ];
 
@@ -74,7 +73,6 @@ export const config = {
     "/api/generate-script/:path*",
     "/api/generate-image/:path*",
     "/api/generate-video/:path*",
-    "/api/generate-variants/:path*",
     "/api/check-video-status/:path*",
   ],
 };

@@ -7,10 +7,25 @@ import { VerticalPlayer } from "@/components/player/VerticalPlayer";
 import { VariantSwitcher } from "@/components/player/VariantSwitcher";
 import type { SceneDraft } from "@/lib/anthropic";
 import type { SceneImages } from "@/lib/types";
-import type { ClipDuration, VariantLabel, VariantResult } from "@/lib/kling";
+import {
+  VARIANT_DEFINITIONS,
+  type ClipDuration,
+  type VariantLabel,
+  type VariantResult,
+} from "@/lib/kling";
 
 const hasAnyFailure = (variants: VariantResult[]) =>
   variants.some((v) => !v.videoUrl);
+
+/** Error from /api/generate-video that may carry a Kling taskId — the
+ * "Check again, no new credit" recovery hook. */
+class VideoGenError extends Error {
+  taskId?: string;
+  constructor(message: string, taskId?: string) {
+    super(message);
+    this.taskId = taskId;
+  }
+}
 
 interface PrototypeViewerProps {
   scenes: SceneDraft[];
@@ -67,6 +82,12 @@ export function PrototypeViewer({
   const heroImageUrl = heroScene ? images[heroScene.id]?.url : undefined;
   const usedFallback = !!heroScene && !explicitHeroScene;
 
+  // v3 variant flow (2026-07-02): each variant gets its OWN styled start
+  // image, then its own video — two client-orchestrated phases (3 images in
+  // parallel, then 3 videos in parallel). Two reasons this lives here and
+  // not in one server route: a serial image+video chain would exceed
+  // Vercel's 300s function cap, and per-variant failures stay independent
+  // (allSettled) exactly like the old batch route.
   const runFetch = useCallback(() => {
     if (!heroScene || !heroImageUrl) {
       // Deferred to a microtask (not called synchronously) to satisfy the
@@ -80,27 +101,98 @@ export function PrototypeViewer({
       });
       return;
     }
-    fetch("/api/generate-variants", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        imageUrl: heroImageUrl,
-        description: heroScene.description,
-        duration: clipDuration,
-      }),
-    })
-      .then(async (res) => {
+
+    // Phase 1 — three styled start frames. Integration style is baked into
+    // the IMAGE prompt: this is where the A/B/C difference actually comes
+    // from (motion prompts alone proved insufficient twice).
+    const imagePromises = VARIANT_DEFINITIONS.map((def) =>
+      fetch("/api/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          description: `${def.imageModifier} Scene: ${heroScene.description}`,
+        }),
+      }).then(async (res) => {
         const data = await res.json();
         if (!res.ok)
-          throw new Error(data.error ?? "Failed to generate variants.");
-        onVariantsReady(data.variants as VariantResult[], heroScene.id);
+          throw new Error(data.error ?? "Failed to generate variant image.");
+        return data.imageUrl as string;
+      }),
+    );
+
+    Promise.allSettled(imagePromises)
+      .then(async (imageResults) => {
+        // Phase 2 — one video per variant, from its styled frame. If a
+        // variant's image failed, fall back to the hero scene image so the
+        // variant still gets a video rather than nothing.
+        const videoResults = await Promise.allSettled(
+          VARIANT_DEFINITIONS.map((def, i) => {
+            const imageResult = imageResults[i];
+            const startImage =
+              imageResult.status === "fulfilled"
+                ? imageResult.value
+                : heroImageUrl;
+            return fetch("/api/generate-video", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                imageUrl: startImage,
+                description: heroScene.description,
+                variantStyle: def.integrationStyle,
+                duration: clipDuration,
+              }),
+            }).then(async (res) => {
+              const data = await res.json();
+              if (!res.ok) {
+                throw new VideoGenError(
+                  data.error ?? "Failed to generate this variant.",
+                  data.taskId,
+                );
+              }
+              return data.videoUrl as string | null;
+            });
+          }),
+        );
+
+        const assembled: VariantResult[] = VARIANT_DEFINITIONS.map(
+          (def, i) => {
+            const imageResult = imageResults[i];
+            const styledImage =
+              imageResult.status === "fulfilled"
+                ? imageResult.value
+                : undefined;
+            const videoResult = videoResults[i];
+            if (videoResult.status === "fulfilled") {
+              return {
+                label: def.label,
+                integrationStyle: def.integrationStyle,
+                imageUrl: styledImage,
+                videoUrl: videoResult.value,
+              };
+            }
+            const reason = videoResult.reason;
+            return {
+              label: def.label,
+              integrationStyle: def.integrationStyle,
+              imageUrl: styledImage,
+              videoUrl: null,
+              error:
+                reason instanceof Error
+                  ? reason.message
+                  : "Unknown error generating this variant.",
+              taskId:
+                reason instanceof VideoGenError ? reason.taskId : undefined,
+            };
+          },
+        );
+        onVariantsReady(assembled, heroScene.id);
       })
       .catch((err) => {
         setError(err instanceof Error ? err.message : "Something went wrong.");
       })
       .finally(() => setLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [heroScene, heroImageUrl]);
+  }, [heroScene, heroImageUrl, clipDuration]);
 
   // Ref guard against StrictMode's double mount-effect in dev — this one
   // mattered most: the doubled call here generated SIX Kling videos
@@ -180,13 +272,14 @@ export function PrototypeViewer({
       <LoadingState
         text="Generating your Brand Prototype..."
         stages={[
-          "Preparing the hero scene...",
-          "Generating Ambient variant...",
-          "Generating Narrative variant...",
-          "Generating Direct variant...",
+          "Framing three brand-integration styles...",
+          "Ambient: product in the background...",
+          "Narrative: product in hand...",
+          "Direct: product close-up...",
+          "Animating all three variants...",
           "Almost ready...",
         ]}
-        note="Generating all 3 variants — usually 4-5 minutes."
+        note="Each variant gets its own styled frame and video — usually 5-6 minutes."
       />
     );
 
@@ -231,7 +324,7 @@ export function PrototypeViewer({
           >
             <VerticalPlayer
               videoUrl={variant.videoUrl}
-              posterUrl={heroImageUrl}
+              posterUrl={variant.imageUrl ?? heroImageUrl}
               label={`Variant ${variant.label} preview`}
               active={variant.label === active.label}
             />

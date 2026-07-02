@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { generateVideoFromImage, VARIANT_DEFINITIONS } from "@/lib/kling";
+import {
+  generateVideoFromImage,
+  KlingTimeoutError,
+  VARIANT_DEFINITIONS,
+} from "@/lib/kling";
 import type { ClipDuration, IntegrationStyle } from "@/lib/kling";
 
-// See generate-variants/route.ts for why this needs to exceed kling.ts's
-// POLL_TIMEOUT_MS (270s).
+// Must exceed kling.ts's POLL_TIMEOUT_MS (270s) or Vercel would kill the
+// function with a generic timeout instead of our own clear error; 290s
+// stays under the 300s ceiling shared by Hobby and Pro plans.
 export const maxDuration = 290;
 
 interface GenerateVideoBody {
@@ -14,9 +19,9 @@ interface GenerateVideoBody {
   duration?: string;
 }
 
-// Shares its modifier text with generateBrandVariants (kling.ts) so a single
-// re-generated variant (e.g. Retry after a timeout) uses the exact same
-// prompt wording as the initial parallel batch.
+// Motion modifiers come from VARIANT_DEFINITIONS (kling.ts) so every
+// variant generation — initial batch and any retry — uses identical
+// prompt wording.
 const VARIANT_MODIFIERS: Record<IntegrationStyle, string> = Object.fromEntries(
   VARIANT_DEFINITIONS.map((def) => [def.integrationStyle, def.modifier]),
 ) as Record<IntegrationStyle, string>;
@@ -43,9 +48,8 @@ export async function POST(request: NextRequest) {
   const modifier = body.variantStyle
     ? VARIANT_MODIFIERS[body.variantStyle]
     : undefined;
-  // Modifier first (primary instruction), scene description as context after
-  // — matches generateBrandVariants' ordering (kling.ts) so a single retry
-  // is consistent with the initial parallel batch.
+  // Modifier first (primary instruction), scene description as context
+  // after — front-loading gives it more weight than appending it.
   const prompt = modifier
     ? `${modifier} Scene: ${body.description}`
     : body.description;
@@ -69,6 +73,11 @@ export async function POST(request: NextRequest) {
       error instanceof Error
         ? error.message
         : "Unknown error generating video.";
-    return NextResponse.json({ error: message }, { status: 502 });
+    // taskId lets the client offer "Check again" (no new credit) when the
+    // failure was our own poll timeout rather than a real Kling failure —
+    // this route now serves the per-variant flow, so it needs the same
+    // recovery path the old batch route had.
+    const taskId = error instanceof KlingTimeoutError ? error.taskId : undefined;
+    return NextResponse.json({ error: message, taskId }, { status: 502 });
   }
 }
