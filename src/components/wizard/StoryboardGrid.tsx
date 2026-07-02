@@ -60,6 +60,8 @@ export function StoryboardGrid({
         tone: brandData.tone,
         audience: brandData.audience,
         campaignGoal: brandData.campaignGoal,
+        sceneMood: brandData.sceneMood,
+        selectedFormat: brandData.selectedFormat,
       }),
     })
       .then(async (res) => {
@@ -90,12 +92,17 @@ export function StoryboardGrid({
   // setState here — the request is kicked off directly, state only updates
   // inside the async .then/.catch handlers.
   const fetchImageFor = useCallback(
-    (sceneId: string, description: string) => {
+    (scene: SceneDraft, description: string) => {
+      const sceneId = scene.id;
       onImagesChange((prev) => ({ ...prev, [sceneId]: {} })); // clear -> shows loading skeleton
       fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ description }),
+        body: JSON.stringify({
+          description,
+          sceneMood: brandData.sceneMood,
+          visualMood: scene.visualMood,
+        }),
       })
         .then(async (res) => {
           const data = await res.json();
@@ -114,7 +121,7 @@ export function StoryboardGrid({
           }));
         });
     },
-    [onImagesChange],
+    [onImagesChange, brandData.sceneMood],
   );
 
   // Fire per-scene image generation once scenes are available — only for
@@ -125,7 +132,7 @@ export function StoryboardGrid({
     scenes.forEach((scene) => {
       if (requestedIds.current.has(scene.id)) return;
       requestedIds.current.add(scene.id);
-      fetchImageFor(scene.id, scene.description);
+      fetchImageFor(scene, scene.description);
     });
   }, [scenes, fetchImageFor]);
 
@@ -157,7 +164,7 @@ export function StoryboardGrid({
       s.id === scene.id ? { ...s, description: trimmed } : s,
     );
     onScenesReady(updated);
-    fetchImageFor(scene.id, trimmed); // regenerate only this scene's image
+    fetchImageFor(scene, trimmed); // regenerate only this scene's image
   }
 
   if (loading)
@@ -229,7 +236,7 @@ export function StoryboardGrid({
                     </span>
                     <button
                       type="button"
-                      onClick={() => fetchImageFor(scene.id, scene.description)}
+                      onClick={() => fetchImageFor(scene, scene.description)}
                       className="text-[10px] font-medium text-accent underline decoration-dotted"
                     >
                       Retry

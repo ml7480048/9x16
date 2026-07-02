@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface VerticalPlayerProps {
   /** Generated video clip URL. If missing (still generating, or Kling video
@@ -12,6 +12,11 @@ interface VerticalPlayerProps {
   posterUrl?: string | null;
   /** Accessible label for the still/scene, used in alt text. */
   label?: string;
+  /** Set false when this player is mounted but hidden (the variant-preload
+   * pattern: all 3 players stay mounted so A/B/C switching is instant, per
+   * dev spec §11) — pauses playback so a hidden, unmuted video can't keep
+   * playing audio underneath the visible one. Defaults to true. */
+  active?: boolean;
   className?: string;
 }
 
@@ -78,6 +83,7 @@ export function VerticalPlayer({
   videoUrl,
   posterUrl,
   label = "Scene preview",
+  active = true,
   className,
 }: VerticalPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -85,6 +91,20 @@ export function VerticalPlayer({
   const [isMuted, setIsMuted] = useState(true);
   const [showControls, setShowControls] = useState(true);
   const [hasError, setHasError] = useState(false);
+
+  // Pause when hidden by the variant switcher; when this player becomes
+  // visible again it's back at the paused frame with controls showing.
+  // setState deferred to a microtask per the "no setState directly in
+  // effect" rule — same pattern as Wizard.tsx's session-restore effect.
+  useEffect(() => {
+    if (active) return;
+    const video = videoRef.current;
+    if (video && !video.paused) video.pause();
+    queueMicrotask(() => {
+      setIsPlaying(false);
+      setShowControls(true);
+    });
+  }, [active]);
 
   function togglePlay() {
     const video = videoRef.current;

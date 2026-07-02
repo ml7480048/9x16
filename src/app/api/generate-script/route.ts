@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateScript, type SceneDraft } from "@/lib/anthropic";
+import type { NarrativeFormat, SceneMood } from "@/lib/types";
 
 interface GenerateScriptBody {
   brandName?: string;
@@ -7,6 +8,8 @@ interface GenerateScriptBody {
   tone?: string;
   audience?: string;
   campaignGoal?: string;
+  sceneMood?: string;
+  selectedFormat?: string;
   scenes?: SceneDraft[];
 }
 
@@ -55,6 +58,13 @@ export async function POST(request: NextRequest) {
         campaignGoal: body.campaignGoal!,
       },
       body.scenes,
+      // Optional (not in REQUIRED_FIELDS): pre-fix persisted sessions may
+      // retry the script call without these — the prompt just omits the
+      // lines rather than failing the whole step.
+      {
+        sceneMood: (body.sceneMood ?? "") as SceneMood | "",
+        selectedFormat: (body.selectedFormat ?? "") as NarrativeFormat | "",
+      },
     );
 
     return NextResponse.json({ script });

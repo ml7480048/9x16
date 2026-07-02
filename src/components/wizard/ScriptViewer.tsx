@@ -39,6 +39,8 @@ export function ScriptViewer({
         tone: brandData.tone,
         audience: brandData.audience,
         campaignGoal: brandData.campaignGoal,
+        sceneMood: brandData.sceneMood,
+        selectedFormat: brandData.selectedFormat,
         scenes,
       }),
     })

@@ -3,6 +3,10 @@ import { generateSceneImage } from "@/lib/kling";
 
 interface GenerateImageBody {
   description?: string;
+  // Optional styling context: the client's Step 2 environment choice and
+  // Claude's per-scene lighting/camera phrase. Omitted → base prompt only.
+  sceneMood?: string;
+  visualMood?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -25,7 +29,10 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const imageUrl = await generateSceneImage(body.description);
+    const imageUrl = await generateSceneImage(body.description, {
+      sceneMood: body.sceneMood,
+      visualMood: body.visualMood,
+    });
     return NextResponse.json({ imageUrl });
   } catch (error) {
     console.error("[/api/generate-image] failed:", error);

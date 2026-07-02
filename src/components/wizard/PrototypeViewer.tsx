@@ -183,12 +183,23 @@ export function PrototypeViewer({
         </p>
       )}
       <div className="mx-auto w-full max-w-[280px]">
-        <VerticalPlayer
-          key={active.label + (active.videoUrl ?? "")}
-          videoUrl={active.videoUrl}
-          posterUrl={heroImageUrl}
-          label={`Variant ${active.label} preview`}
-        />
+        {/* All 3 players stay mounted (inactive ones hidden) so their videos
+            preload and A/B/C switching is instant — dev spec §11 "variant
+            switching must be instant". Rendering only the active one meant a
+            full video reload on every tab switch. */}
+        {variants.map((variant) => (
+          <div
+            key={variant.label}
+            className={variant.label === active.label ? "" : "hidden"}
+          >
+            <VerticalPlayer
+              videoUrl={variant.videoUrl}
+              posterUrl={heroImageUrl}
+              label={`Variant ${variant.label} preview`}
+              active={variant.label === active.label}
+            />
+          </div>
+        ))}
         {active.error && (
           <div className="mt-2 flex flex-col items-center gap-1 text-center">
             <p className="text-xs text-text-secondary">

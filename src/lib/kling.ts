@@ -175,18 +175,35 @@ function mockImageUrl(seed: string): string {
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
 }
 
-/** Step 3 — generates a single cinematic still for a scene description. */
-export async function generateSceneImage(description: string): Promise<string> {
+/**
+ * Step 3 — generates a single cinematic still for a scene description.
+ * `sceneMood` is the client's Step 2 environment choice (urban/domestic/...),
+ * `visualMood` is Claude's per-scene lighting/camera phrase — both existed
+ * since Day 4/7 but never reached this prompt until 2026-07-02.
+ */
+export async function generateSceneImage(
+  description: string,
+  opts?: { sceneMood?: string; visualMood?: string },
+): Promise<string> {
   if (isMockMode()) {
     return mockImageUrl(description);
   }
+
+  const prompt = [
+    "Cinematic, dark, premium film-still aesthetic, vertical composition.",
+    opts?.sceneMood ? `${opts.sceneMood} setting.` : "",
+    description,
+    opts?.visualMood ? `Mood: ${opts.visualMood}.` : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   const createResponse = await fetch(`${BASE_URL}/v1/images/generations`, {
     method: "POST",
     headers: authHeaders(),
     body: JSON.stringify({
       model_name: "kling-v1",
-      prompt: `Cinematic, dark, premium film-still aesthetic, vertical composition. ${description}`,
+      prompt,
       n: 1,
       aspect_ratio: "9:16",
     }),

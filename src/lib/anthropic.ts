@@ -26,6 +26,23 @@ type BrandInput = Pick<
   "brandName" | "product" | "tone" | "audience" | "campaignGoal"
 >;
 
+// Step 2 (Visual Setup) choices. Kept separate from BrandInput because
+// matchFormat (Agent 2) runs BEFORE the client picks a format — it only
+// gets BrandInput, while scene/script generation gets both.
+type VisualInput = Pick<WizardFormData, "sceneMood" | "selectedFormat">;
+
+// Same definitions the client sees in VisualSetupForm — spelled out for the
+// prompt so the model acts on the chosen format, not its own guess at what
+// the label means.
+const FORMAT_GUIDANCE: Record<string, string> = {
+  "slice-of-life":
+    "Slice of Life — everyday moments, organic brand integration, calm observational pacing.",
+  "micro-thriller":
+    "Micro-Thriller — rising tension across scenes, a cliffhanger or twist in the final scene.",
+  "character-comedy":
+    "Character Comedy — one distinct recurring character, comedic beats in recognizable situations.",
+};
+
 export interface SceneDraft {
   id: string;
   order: number;
@@ -127,6 +144,21 @@ function describeBrand(brand: BrandInput): string {
   ].join("\n");
 }
 
+function describeVisual(visual: VisualInput): string {
+  const lines: string[] = [];
+  if (visual.sceneMood) {
+    lines.push(
+      `Scene setting: ${visual.sceneMood} — every scene must take place in this kind of environment.`,
+    );
+  }
+  if (visual.selectedFormat) {
+    lines.push(
+      `Narrative format: ${FORMAT_GUIDANCE[visual.selectedFormat] ?? visual.selectedFormat}`,
+    );
+  }
+  return lines.join("\n");
+}
+
 // ---------------------------------------------------------------------------
 // Mock data — used whenever isMockMode() is true. Personalized just enough
 // (brand name / product) to feel real in the UI without an API call.
@@ -184,6 +216,7 @@ function mockFormatMatch(brand: BrandInput): FormatMatch {
 /** Step 3 — generates 4-6 scene descriptions for the episode prototype. */
 export async function generateSceneDescriptions(
   brand: BrandInput,
+  visual: VisualInput,
 ): Promise<SceneDraft[]> {
   if (isMockMode()) {
     return mockSceneDescriptions(brand);
@@ -193,8 +226,9 @@ export async function generateSceneDescriptions(
 
 Brand input:
 ${describeBrand(brand)}
+${describeVisual(visual)}
 
-Generate 4 to 6 scenes for a 30-60 second vertical video episode that organically features this brand. Each scene should be a single cinematic beat.
+Generate 4 to 6 scenes for a 30-60 second vertical video episode that organically features this brand. Each scene should be a single cinematic beat. Follow the scene setting and narrative format above — they are the client's explicit choices, not suggestions.
 
 Respond with ONLY a raw JSON array (no markdown fences, no commentary), where each element has this shape:
 { "id": string, "order": number, "description": string, "visualMood": string }
@@ -209,6 +243,7 @@ Respond with ONLY a raw JSON array (no markdown fences, no commentary), where ea
 export async function generateScript(
   brand: BrandInput,
   scenes: SceneDraft[],
+  visual: VisualInput,
 ): Promise<EpisodeScript> {
   if (isMockMode()) {
     return mockScript(brand, scenes);
@@ -222,6 +257,7 @@ export async function generateScript(
 
 Brand input:
 ${describeBrand(brand)}
+${describeVisual(visual)}
 
 Scenes:
 ${sceneList}

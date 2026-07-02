@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateSceneDescriptions } from "@/lib/anthropic";
+import type { NarrativeFormat, SceneMood } from "@/lib/types";
 
 interface GenerateScenesBody {
   brandName?: string;
@@ -7,14 +8,22 @@ interface GenerateScenesBody {
   tone?: string;
   audience?: string;
   campaignGoal?: string;
+  sceneMood?: string;
+  selectedFormat?: string;
 }
 
+// sceneMood/selectedFormat are required too — Step 2 validation guarantees
+// they're set before the wizard ever calls this, and without them the
+// client's Visual Setup choices would silently not influence the output
+// (the exact bug this fixed on 2026-07-02).
 const REQUIRED_FIELDS: (keyof GenerateScenesBody)[] = [
   "brandName",
   "product",
   "tone",
   "audience",
   "campaignGoal",
+  "sceneMood",
+  "selectedFormat",
 ];
 
 export async function POST(request: NextRequest) {
@@ -38,13 +47,19 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const scenes = await generateSceneDescriptions({
-      brandName: body.brandName!,
-      product: body.product!,
-      tone: body.tone as "lifestyle" | "thriller" | "comedy",
-      audience: body.audience!,
-      campaignGoal: body.campaignGoal!,
-    });
+    const scenes = await generateSceneDescriptions(
+      {
+        brandName: body.brandName!,
+        product: body.product!,
+        tone: body.tone as "lifestyle" | "thriller" | "comedy",
+        audience: body.audience!,
+        campaignGoal: body.campaignGoal!,
+      },
+      {
+        sceneMood: body.sceneMood as SceneMood,
+        selectedFormat: body.selectedFormat as NarrativeFormat,
+      },
+    );
 
     return NextResponse.json({ scenes });
   } catch (error) {

@@ -1,6 +1,6 @@
 import { listLeads } from "@/lib/db";
 
-// Protected by middleware.ts (Basic Auth, ADMIN_USER/ADMIN_PASSWORD) — this
+// Protected by proxy.ts (Basic Auth, ADMIN_USER/ADMIN_PASSWORD) — this
 // page itself has no auth check of its own. Not linked from the main nav.
 export default async function LeadsPage() {
   const leads = await listLeads();

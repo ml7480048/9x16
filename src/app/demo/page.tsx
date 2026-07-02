@@ -33,11 +33,20 @@ export default function DemoPage() {
         </h1>
 
         <div className="flex w-full max-w-[380px] flex-col gap-4">
-          <VerticalPlayer
-            key={activeLabel}
-            videoUrl={DEMO_CLIPS[activeLabel]}
-            label={`Variant ${activeLabel} sample`}
-          />
+          {/* All 3 players stay mounted (inactive hidden) so switching is
+              instant — same preload pattern as the real wizard Step 5. */}
+          {VARIANT_DEFINITIONS.map((variant) => (
+            <div
+              key={variant.label}
+              className={variant.label === activeLabel ? "" : "hidden"}
+            >
+              <VerticalPlayer
+                videoUrl={DEMO_CLIPS[variant.label]}
+                label={`Variant ${variant.label} sample`}
+                active={variant.label === activeLabel}
+              />
+            </div>
+          ))}
           <VariantSwitcher
             variants={VARIANT_DEFINITIONS}
             activeLabel={activeLabel}
