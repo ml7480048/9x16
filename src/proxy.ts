@@ -21,6 +21,7 @@ const AI_API_PREFIXES = [
   "/api/generate-image",
   "/api/generate-video",
   "/api/check-video-status",
+  "/api/match-format",
 ];
 
 export function proxy(req: NextRequest) {
@@ -78,6 +79,7 @@ export const config = {
     "/api/generate-image/:path*",
     "/api/generate-video/:path*",
     "/api/check-video-status/:path*",
+    "/api/match-format/:path*",
     "/api/health/:path*",
   ],
 };

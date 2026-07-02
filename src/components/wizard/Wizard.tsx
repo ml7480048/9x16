@@ -14,7 +14,7 @@ import {
   type SceneImages,
   type WizardFormData,
 } from "@/lib/types";
-import type { EpisodeScript, SceneDraft } from "@/lib/anthropic";
+import type { EpisodeScript, FormatMatch, SceneDraft } from "@/lib/anthropic";
 import type { VariantLabel, VariantResult } from "@/lib/kling";
 import {
   getCurrentSessionId,
@@ -30,6 +30,7 @@ const TOTAL_STEPS = 5;
 export function Wizard() {
   const [step, setStep] = useState(1);
   const [data, setData] = useState<WizardFormData>(emptyWizardFormData);
+  const [formatMatch, setFormatMatch] = useState<FormatMatch | null>(null);
   const [scenes, setScenes] = useState<SceneDraft[] | null>(null);
   const [script, setScript] = useState<EpisodeScript | null>(null);
   const [images, setImages] = useState<SceneImages>({});
@@ -71,6 +72,7 @@ export function Wizard() {
         // existed (e.g. episodeLength) restore as "" rather than undefined —
         // undefined would slip past the `!== ""` step validation.
         setData({ ...emptyWizardFormData, ...persisted.data });
+        setFormatMatch(persisted.formatMatch ?? null);
         setScenes(persisted.scenes);
         setScript(persisted.script);
         setImages(persisted.images ?? {});
@@ -103,6 +105,7 @@ export function Wizard() {
       id: sessionId,
       step,
       data,
+      formatMatch,
       scenes,
       script,
       images,
@@ -117,6 +120,7 @@ export function Wizard() {
     sessionId,
     step,
     data,
+    formatMatch,
     scenes,
     script,
     images,
@@ -165,7 +169,14 @@ export function Wizard() {
           the conditional renders, so the key adds no new unmount behavior. */}
       <div key={step} className="animate-fade-in flex flex-1 flex-col">
       {step === 1 && <BrandInputForm data={data} onChange={update} />}
-      {step === 2 && <VisualSetupForm data={data} onChange={update} />}
+      {step === 2 && (
+        <VisualSetupForm
+          data={data}
+          onChange={update}
+          formatMatch={formatMatch}
+          onFormatMatch={setFormatMatch}
+        />
+      )}
       {step === 3 && (
         <StoryboardGrid
           brandData={data}

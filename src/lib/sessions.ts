@@ -16,7 +16,7 @@
 // assets into our own storage, e.g. Vercel Blob) is deliberately deferred.
 
 import type { SceneImages, WizardFormData } from "./types";
-import type { EpisodeScript, SceneDraft } from "./anthropic";
+import type { EpisodeScript, FormatMatch, SceneDraft } from "./anthropic";
 import type { VariantLabel, VariantResult } from "./kling";
 
 export interface StoredSession {
@@ -25,6 +25,10 @@ export interface StoredSession {
   updatedAt: string; // ISO
   step: number;
   data: WizardFormData;
+  /** Agent 2's format recommendation for this brand — cached per session
+   * so revisiting Step 2 doesn't re-call Claude. Optional: pre-Day-19
+   * sessions don't have it. */
+  formatMatch?: FormatMatch | null;
   scenes: SceneDraft[] | null;
   script: EpisodeScript | null;
   images: SceneImages;

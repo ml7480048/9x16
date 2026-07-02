@@ -352,6 +352,8 @@ Formats to choose from:
 - "micro-thriller": cliffhanger endings, peak emotional tension (Automotive, Tech, Finance)
 - "character-comedy": fixed character, recurring situations (Food, Beverage, Retail)
 
+Keep "reasoning" to 1-2 concise sentences — it renders inside a small card in the UI.
+
 Respond with ONLY raw JSON (no markdown fences, no commentary) in this shape:
 { "recommended": "slice-of-life" | "micro-thriller" | "character-comedy", "confidence": number (0-1), "reasoning": string }`;
 

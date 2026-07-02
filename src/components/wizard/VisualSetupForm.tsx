@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import {
@@ -10,10 +10,15 @@ import {
   type SceneMood,
   type WizardFormData,
 } from "@/lib/types";
+import type { FormatMatch } from "@/lib/anthropic";
 
 interface VisualSetupFormProps {
   data: WizardFormData;
   onChange: (partial: Partial<WizardFormData>) => void;
+  /** Agent 2's cached recommendation (lifted to Wizard + persisted) — null
+   * until fetched. The client still picks freely; this is guidance only. */
+  formatMatch: FormatMatch | null;
+  onFormatMatch: (match: FormatMatch) => void;
 }
 
 const moods: { value: SceneMood; label: string }[] = [
@@ -45,7 +50,46 @@ const formats: {
   },
 ];
 
-export function VisualSetupForm({ data, onChange }: VisualSetupFormProps) {
+export function VisualSetupForm({
+  data,
+  onChange,
+  formatMatch,
+  onFormatMatch,
+}: VisualSetupFormProps) {
+  const [matchLoading, setMatchLoading] = useState(!formatMatch);
+  // Ref guard against StrictMode's double mount-effect (same pattern as
+  // the other wizard steps' generation fetches).
+  const matchFetchStarted = useRef(false);
+
+  // Fetch Agent 2's recommendation once per session (cached in Wizard
+  // state). Failure is silent — the recommendation is optional guidance,
+  // not worth blocking Step 2 with an error screen.
+  useEffect(() => {
+    if (formatMatch || matchFetchStarted.current) {
+      setMatchLoading(false);
+      return;
+    }
+    matchFetchStarted.current = true;
+    fetch("/api/match-format", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        brandName: data.brandName,
+        product: data.product,
+        tone: data.tone,
+        audience: data.audience,
+        campaignGoal: data.campaignGoal,
+      }),
+    })
+      .then(async (res) => {
+        const payload = await res.json();
+        if (res.ok && payload.match) onFormatMatch(payload.match);
+      })
+      .catch(() => {})
+      .finally(() => setMatchLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
@@ -91,22 +135,49 @@ export function VisualSetupForm({ data, onChange }: VisualSetupFormProps) {
       </div>
 
       <div className="flex flex-col gap-3">
-        <label className="text-sm text-text-secondary">Narrative format</label>
+        <div className="flex items-baseline justify-between gap-2">
+          <label className="text-sm text-text-secondary">
+            Narrative format
+          </label>
+          {matchLoading && (
+            <span className="text-xs text-text-secondary/60">
+              Matching your brand...
+            </span>
+          )}
+        </div>
         <div className="flex flex-col gap-3">
-          {formats.map((format) => (
-            <SelectableCard
-              key={format.value}
-              selected={data.selectedFormat === format.value}
-              onClick={() => onChange({ selectedFormat: format.value })}
-            >
-              <p className="text-sm font-semibold text-text-primary">
-                {format.label}
-              </p>
-              <p className="text-sm leading-6 text-text-secondary">
-                {format.description}
-              </p>
-            </SelectableCard>
-          ))}
+          {formats.map((format) => {
+            const recommended = formatMatch?.recommended === format.value;
+            return (
+              <SelectableCard
+                key={format.value}
+                selected={data.selectedFormat === format.value}
+                onClick={() => onChange({ selectedFormat: format.value })}
+              >
+                <div className="flex items-baseline justify-between gap-2">
+                  <p className="text-sm font-semibold text-text-primary">
+                    {format.label}
+                  </p>
+                  {recommended && (
+                    <span className="text-[10px] font-medium uppercase tracking-widest text-text-primary">
+                      Recommended
+                      {typeof formatMatch?.confidence === "number"
+                        ? ` · ${Math.round(formatMatch.confidence * 100)}%`
+                        : ""}
+                    </span>
+                  )}
+                </div>
+                <p className="text-sm leading-6 text-text-secondary">
+                  {format.description}
+                </p>
+                {recommended && formatMatch?.reasoning && (
+                  <p className="text-xs leading-5 text-text-secondary/80">
+                    {formatMatch.reasoning}
+                  </p>
+                )}
+              </SelectableCard>
+            );
+          })}
         </div>
       </div>
     </div>

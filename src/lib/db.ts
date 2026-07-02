@@ -65,7 +65,7 @@ export async function listLeads(): Promise<Lead[]> {
 // in the DB to reset someone).
 // ---------------------------------------------------------------------------
 
-export type UsageKind = "scenes" | "script" | "image" | "video";
+export type UsageKind = "scenes" | "script" | "image" | "video" | "match";
 
 // Videos are the real money (trial: 100 units); images are cheap (1000
 // units); Claude calls are cents. 30 videos ≈ 10 full Step-5 runs.
@@ -74,6 +74,7 @@ const USAGE_LIMITS: Record<UsageKind, number> = {
   script: 60,
   image: 120,
   video: 30,
+  match: 60,
 };
 
 let usageSchemaReady = false;
