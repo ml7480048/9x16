@@ -15,34 +15,16 @@ import {
 } from "@/lib/types";
 import type { EpisodeScript, SceneDraft } from "@/lib/anthropic";
 import type { VariantLabel, VariantResult } from "@/lib/kling";
+import {
+  getCurrentSessionId,
+  getSession,
+  migrateLegacySession,
+  newSessionId,
+  saveSession,
+  setCurrentSessionId,
+} from "@/lib/sessions";
 
 const TOTAL_STEPS = 5;
-// Exported so "New Session" entry points (Sidebar, dashboard CTA) can clear
-// stale in-progress state before navigating here.
-export const WIZARD_STORAGE_KEY = "9x16-wizard-state";
-const STORAGE_KEY = WIZARD_STORAGE_KEY;
-
-interface PersistedState {
-  step: number;
-  data: WizardFormData;
-  scenes: SceneDraft[] | null;
-  script: EpisodeScript | null;
-  images: SceneImages;
-  variants: VariantResult[] | null;
-  activeVariantLabel: VariantLabel;
-  heroSceneId: string | null;
-}
-
-function loadPersisted(): PersistedState | null {
-  if (typeof window === "undefined") return null;
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as PersistedState;
-  } catch {
-    return null;
-  }
-}
 
 export function Wizard() {
   const [step, setStep] = useState(1);
@@ -54,17 +36,34 @@ export function Wizard() {
   const [activeVariantLabel, setActiveVariantLabel] =
     useState<VariantLabel>("A");
   const [heroSceneId, setHeroSceneId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
 
-  // Restore persisted progress once, after mount. Deliberately not done via a
-  // useState lazy initializer — sessionStorage isn't available during server
-  // render, so reading it there would cause a hydration mismatch. The state
-  // updates are deferred to a microtask (rather than called synchronously in
-  // the effect body) to satisfy the "no setState directly in effect" rule.
+  // Resolve which session this wizard mount belongs to, then restore it —
+  // once, after mount (localStorage isn't available during server render;
+  // reading it earlier would cause a hydration mismatch). Resolution order:
+  //   1. ?session=<id> — explicit resume from /platform/session/[id];
+  //   2. the "current session" pointer — plain revisit/reload of
+  //      /platform/new picks up in-flight progress (the original iOS Safari
+  //      tab-discard fix), unless Sidebar's "New Session" cleared it;
+  //   3. otherwise a fresh id (not saved until something meaningful exists).
+  // State updates are deferred to a microtask to satisfy the "no setState
+  // directly in effect" rule.
   useEffect(() => {
     queueMicrotask(() => {
-      const persisted = loadPersisted();
+      migrateLegacySession();
+      const paramId = new URLSearchParams(window.location.search).get(
+        "session",
+      );
+      const persisted =
+        (paramId ? getSession(paramId) : null) ??
+        (() => {
+          const currentId = getCurrentSessionId();
+          return currentId ? getSession(currentId) : null;
+        })();
       if (persisted) {
+        setSessionId(persisted.id);
+        setCurrentSessionId(persisted.id);
         setStep(persisted.step);
         setData(persisted.data);
         setScenes(persisted.scenes);
@@ -73,22 +72,29 @@ export function Wizard() {
         setVariants(persisted.variants ?? null);
         setActiveVariantLabel(persisted.activeVariantLabel ?? "A");
         setHeroSceneId(persisted.heroSceneId ?? null);
+      } else {
+        setSessionId(newSessionId());
       }
       setHydrated(true);
     });
   }, []);
 
-  // Persist progress to localStorage (not sessionStorage) so it survives a
-  // backgrounded/closed mobile tab, not just an in-page reload — iOS Safari in
-  // particular can silently discard sessionStorage when a tab is suspended or
-  // the browser app is switched away from, which is the "5th step then it's
-  // just gone" bug this was fixing. Gated on `hydrated` so we don't overwrite
-  // a just-restored session with pre-restore defaults on the very first
-  // render. "New Session" (Sidebar) still explicitly clears this key, so
-  // intentionally starting over isn't affected.
+  // Persist progress into the session store (localStorage, not
+  // sessionStorage, so it survives a backgrounded/closed mobile tab — iOS
+  // Safari can silently discard sessionStorage when the tab is suspended).
+  // Gated on `hydrated` so we don't overwrite a just-restored session with
+  // pre-restore defaults on the very first render, and on "something was
+  // actually entered" so merely opening the wizard doesn't litter the
+  // Sessions list with blank entries.
   useEffect(() => {
-    if (!hydrated || typeof window === "undefined") return;
-    const payload: PersistedState = {
+    if (!hydrated || !sessionId) return;
+    const touched =
+      step > 1 ||
+      scenes !== null ||
+      Object.values(data).some((value) => value !== "");
+    if (!touched) return;
+    saveSession({
+      id: sessionId,
       step,
       data,
       scenes,
@@ -97,10 +103,11 @@ export function Wizard() {
       variants,
       activeVariantLabel,
       heroSceneId,
-    };
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    });
+    setCurrentSessionId(sessionId);
   }, [
     hydrated,
+    sessionId,
     step,
     data,
     scenes,

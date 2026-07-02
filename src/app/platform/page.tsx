@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/Button";
-import { WIZARD_STORAGE_KEY } from "@/components/wizard/Wizard";
+import { clearCurrentSession } from "@/lib/sessions";
 
 const steps = [
   {
@@ -69,7 +69,7 @@ export default function PlatformDashboard() {
       <div>
         <Link
           href="/platform/new"
-          onClick={() => window.localStorage.removeItem(WIZARD_STORAGE_KEY)}
+          onClick={() => clearCurrentSession()}
           className={buttonVariants({ variant: "accent" })}
         >
           Start my free prototype <span aria-hidden="true">→</span>

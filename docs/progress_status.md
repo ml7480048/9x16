@@ -2,6 +2,8 @@
 
 > Оновлювати після кожної сесії. ✅ Done · 🔵 Next · ⏳ Pending
 
+**День 13 — Session persistence + Session detail (2026-07-02, ранок+вечір за одну сесію):** Новий `src/lib/sessions.ts` — мульти-сесійний localStorage-стор замість одного ключа `9x16-wizard-state` (старий ключ автоматично мігрується в стор при першому відкритті wizard'а, поточна незакінчена сесія не губиться). Кожна сесія: id (crypto.randomUUID), createdAt/updatedAt, всі дані wizard'а. Wizard тепер працює з session id: `/platform/new` резюмить "поточну" сесію (pointer `9x16-current-session-id` — та сама iOS-Safari-захисна поведінка, що була), `?session=<id>` відкриває конкретну, "New Session" (Sidebar + CTA на /platform) чистить лише pointer — стара сесія ЗАЛИШАЄТЬСЯ в списку (раніше видалялась єдина копія). Порожні сесії не зберігаються (guard "щось введено"). `/platform/sessions` — справжній список за задокументованим row-патерном (бренд зліва, формат+дата справа, статус accent-текстом, лінк на деталі). `/platform/session/[id]` — з заглушки в робочу сторінку: in-progress → "Paused at Step 0X · Назва" + Continue (веде в wizard через ?session=), complete → VerticalPlayer+VariantSwitcher зі збереженими варіантами (preload-патерн як Step 5), storyboard-сітка мініатюр, Delete з confirm, чесна позначка "previews expire ~30 days" для сесій старших 30 днів (Kling URL-и протухають — пункт (б) аудит-беклогу закритий на рівні UX; справжнє збереження медіа у Vercel Blob — досі відкладено). Бонус-фікс: `/platform/leads` отримав `export const dynamic = "force-dynamic"` — раніше сторінка статично запікалась при білді (знімок бази на момент деплою + білд падав без POSTGRES_URL локально). Перевірено: tsc, eslint, повний `next build` — чисто.
+
 **Позапланова сесія "закрити діри" (2026-07-02, перед Днем 13) — за результатами повного аудиту коду:**
 1. **AI-роути захищено** (`src/proxy.ts`): всі `/api/generate-*` + `/api/check-video-status` тепер вимагають cookie `9x16_lead` — раніше lead gate захищав лише сторінку, а самі роути були відкриті будь-кому з curl (пряме спалювання Kling/Anthropic кредитів). Перевірено: без cookie 401, з cookie проходить. Це досі soft gate (cookie можна підробити) — наступний шар: per-lead квоти генерацій у Postgres (ще не зроблено).
 2. **Крок 2 (Visual Setup) тепер реально впливає на генерацію**: до цього `sceneMood`/`selectedFormat` збиралися формою і НІКУДИ не передавалися — вибір "Micro-Thriller/Outdoor" давав той самий результат, що "Comedy/Domestic". Тепер обидва поля йдуть у промпти сцен і скрипта (`describeVisual()` + `FORMAT_GUIDANCE` в anthropic.ts, нові обов'язкові поля в /api/generate-scenes), а в промпт зображень Kling додано `sceneMood` + Claude-івський пер-сценовий `visualMood` (генерувався з Дня 7, але ніколи не використовувався). УВАГА: "Color palette" зі спеки §4.1 досі не існує у формі.
@@ -67,9 +69,9 @@
 | 11 | Вечір | Три варіанти генерації (Promise.all) | ✅ Done |
 | 12 | Ранок | VariantSwitcher UI | ✅ Done |
 | 12 | Вечір | Step 5 — Prototype Viewer | ✅ Done |
-| 13 | Ранок | Session persistence (localStorage) | 🔵 Next |
-| 13 | Вечір | Session detail page | ⏳ Pending |
-| 14 | Ранок | /demo route (публічний showcase) | ⏳ Pending |
+| 13 | Ранок | Session persistence (localStorage) | ✅ Done |
+| 13 | Вечір | Session detail page | ✅ Done (зроблено разом з ранком) |
+| 14 | Ранок | /demo route (публічний showcase) | ✅ Done (зроблено раніше, під час A24-редизайну) |
 | 14 | Вечір | Mobile тест /demo | ⏳ Pending |
 | 15 | Ранок | End-to-end тест | ⏳ Pending |
 | 15 | Вечір | Фікси і polish | ⏳ Pending |

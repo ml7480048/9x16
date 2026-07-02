@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { WIZARD_STORAGE_KEY } from "@/components/wizard/Wizard";
+import { clearCurrentSession } from "@/lib/sessions";
 
 const navItems = [
   { label: "New Session", href: "/platform/new" },
@@ -27,13 +27,15 @@ export function Sidebar() {
             key={item.href}
             href={item.href}
             onClick={() => {
-              // "New Session" should always start blank — without this, a
-              // click here just resumes whatever wizard progress happened
-              // to be sitting in localStorage from a previous attempt.
-              // A plain browser reload/reopen mid-wizard still restores
-              // normally, since that doesn't go through this onClick.
+              // "New Session" should always start blank — clearing the
+              // current-session pointer makes the wizard mint a fresh id
+              // instead of resuming in-flight progress. The previous
+              // session itself stays in the store (visible under
+              // Sessions), unlike the pre-Day-13 behavior which deleted
+              // the only copy. A plain reload mid-wizard still restores,
+              // since that doesn't go through this onClick.
               if (item.href === "/platform/new") {
-                window.localStorage.removeItem(WIZARD_STORAGE_KEY);
+                clearCurrentSession();
               }
             }}
             className={cn(

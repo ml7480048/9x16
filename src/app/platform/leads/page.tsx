@@ -1,5 +1,11 @@
 import { listLeads } from "@/lib/db";
 
+// Rendered per-request, never prerendered: without this the build tried to
+// bake the leads table into static HTML — a build-time DB snapshot that
+// would only refresh on redeploy (and the build failed outright wherever
+// POSTGRES_URL isn't set, e.g. locally).
+export const dynamic = "force-dynamic";
+
 // Protected by proxy.ts (Basic Auth, ADMIN_USER/ADMIN_PASSWORD) — this
 // page itself has no auth check of its own. Not linked from the main nav.
 export default async function LeadsPage() {

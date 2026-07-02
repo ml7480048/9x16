@@ -1,12 +1,16 @@
 import { cn } from "@/lib/utils";
 
-const steps = [
+// Exported for /platform/session/[id], which shows where an in-progress
+// session was paused ("Step 03 · Storyboard").
+export const WIZARD_STEP_NAMES = [
   "Brand Input",
   "Visual Setup",
   "Storyboard",
   "Detailed Script",
   "Money Shot",
 ];
+
+const steps = WIZARD_STEP_NAMES;
 
 interface StepIndicatorProps {
   currentStep: number;
