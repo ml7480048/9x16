@@ -15,12 +15,14 @@ interface HeaderProps {
   subNav?: ReactNode;
 }
 
-// A24-minimalist pass (2026-07): thin, transparent, floating bar — no
-// background fill, no border. Sits directly on top of whatever content
-// scrolls beneath it.
+// A24-minimalist pass (2026-07): thin floating bar — no border, no shadow.
+// Solid page-color background (not transparent): on the all-#0A0A0A pages
+// it's visually identical to transparent, but when bright media scrolls
+// underneath (session detail video, /demo) the nav text stayed legible —
+// found unreadable over a light video frame in the Day 14 mobile pass.
 export function Header({ subNav }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-50 flex flex-col gap-2 px-6 py-5">
+    <header className="sticky top-0 z-50 flex flex-col gap-2 bg-background px-6 py-5">
       <div className="flex items-center justify-between">
         <Link
           href="/"
@@ -28,12 +30,15 @@ export function Header({ subNav }: HeaderProps) {
         >
           9×16
         </Link>
-        <nav className="flex items-center gap-6">
+        {/* gap/size step down at mobile widths — at 375px the four labels
+            plus logo overflow one line and "AI Prototype" wraps onto the
+            logo (found in the Day 14 mobile pass). */}
+        <nav className="flex items-center gap-3 sm:gap-6">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
-              className="text-sm text-text-secondary transition-colors hover:text-text-primary"
+              className="whitespace-nowrap text-xs text-text-secondary transition-colors hover:text-text-primary sm:text-sm"
             >
               {item.label}
             </Link>

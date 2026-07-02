@@ -160,19 +160,25 @@ export default function SessionDetailPage() {
                   key={scene.id}
                   className="relative aspect-[9/16] w-full overflow-hidden bg-surface-elevated"
                 >
-                  {imageUrl ? (
+                  {/* Numbered placeholder always renders underneath; the
+                      image hides itself on load failure (expired Kling URL)
+                      so we degrade to the placeholder instead of the
+                      browser's broken-image icon. */}
+                  <div className="flex h-full w-full items-center justify-center">
+                    <span className="text-[10px] text-text-secondary">
+                      {String(scene.order).padStart(2, "0")}
+                    </span>
+                  </div>
+                  {imageUrl && (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={imageUrl}
                       alt={`Scene ${scene.order} storyboard still`}
-                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                      }}
+                      className="absolute inset-0 h-full w-full object-cover"
                     />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center">
-                      <span className="text-[10px] text-text-secondary">
-                        {String(scene.order).padStart(2, "0")}
-                      </span>
-                    </div>
                   )}
                 </div>
               );

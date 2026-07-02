@@ -137,19 +137,24 @@ export function VerticalPlayer({
 
   if (!videoUrl) {
     // No video yet — fall back to the still image (or an empty branded box).
+    // The "No preview" box always renders underneath and the image hides
+    // itself on load failure (e.g. expired Kling URL), so a dead link
+    // degrades gracefully instead of showing the broken-image icon.
     return (
       <div className={containerClass}>
-        {posterUrl ? (
+        <div className="flex h-full w-full items-center justify-center">
+          <span className="text-xs text-text-secondary">No preview yet</span>
+        </div>
+        {posterUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={posterUrl}
             alt={label}
-            className="h-full w-full object-cover"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+            className="absolute inset-0 h-full w-full object-cover"
           />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center">
-            <span className="text-xs text-text-secondary">No preview yet</span>
-          </div>
         )}
       </div>
     );

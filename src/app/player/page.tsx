@@ -39,7 +39,10 @@ export default function PlayerPage() {
               tabIndex={0}
               className="group relative aspect-[9/16] w-full overflow-hidden bg-surface"
             >
-              <div className="absolute inset-0 flex items-center justify-center p-1 text-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100">
+              {/* Labels always visible below md — hover-only reveal made the
+                  tiles blank rectangles on touch screens (Day 14 mobile
+                  pass), and mobile is the primary demo device. */}
+              <div className="absolute inset-0 flex items-center justify-center p-1 text-center transition-opacity duration-200 md:opacity-0 md:group-hover:opacity-100 md:group-focus-visible:opacity-100">
                 <span className="text-[10px] leading-tight text-text-primary">
                   {format.label}
                 </span>
