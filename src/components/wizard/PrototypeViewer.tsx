@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import { VerticalPlayer } from "@/components/player/VerticalPlayer";
@@ -95,8 +95,16 @@ export function PrototypeViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [heroScene, heroImageUrl]);
 
+  // Ref guard against StrictMode's double mount-effect in dev — this one
+  // mattered most: the doubled call here generated SIX Kling videos
+  // instead of three (caught in the Day 15 E2E network log; see
+  // StoryboardGrid's sceneFetchStarted).
+  const variantsFetchStarted = useRef(false);
   useEffect(() => {
-    if (!variants) runFetch();
+    if (!variants && !variantsFetchStarted.current) {
+      variantsFetchStarted.current = true;
+      runFetch();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

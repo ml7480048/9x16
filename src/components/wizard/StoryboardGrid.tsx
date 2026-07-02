@@ -84,8 +84,17 @@ export function StoryboardGrid({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brandData]);
 
+  // Ref guard: React StrictMode runs mount effects twice in dev, which
+  // fired TWO real Claude scene calls per visit (caught in the Day 15 E2E
+  // network log — script and variants had the same bug). Prod was fine
+  // (no double-invoke), but every dev test paid double. Same idea as
+  // requestedIds above, which is why images never double-fired.
+  const sceneFetchStarted = useRef(false);
   useEffect(() => {
-    if (!scenes) runFetch();
+    if (!scenes && !sceneFetchStarted.current) {
+      sceneFetchStarted.current = true;
+      runFetch();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

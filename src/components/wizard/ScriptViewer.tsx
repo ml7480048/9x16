@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
 import { Textarea } from "@/components/ui/Textarea";
@@ -57,8 +57,15 @@ export function ScriptViewer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [brandData, scenes]);
 
+  // Ref guard against StrictMode's double mount-effect in dev — without it
+  // every dev visit to this step paid for two identical Claude script
+  // calls (see StoryboardGrid's sceneFetchStarted for the full story).
+  const scriptFetchStarted = useRef(false);
   useEffect(() => {
-    if (!script) runFetch();
+    if (!script && !scriptFetchStarted.current) {
+      scriptFetchStarted.current = true;
+      runFetch();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
