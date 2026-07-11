@@ -38,10 +38,7 @@ interface PrototypeViewerProps {
   /** Scene the current variants were generated from — compared against the
    * (possibly re-chosen) Money Shot to flag stale variants. */
   variantsSceneId: string | null;
-  onVariantsReady: (
-    variants: VariantResult[],
-    sourceSceneId: string,
-  ) => void;
+  onVariantsReady: (variants: VariantResult[], sourceSceneId: string) => void;
   activeLabel: VariantLabel;
   onActiveLabelChange: (label: VariantLabel) => void;
   /** Kling clip length from the Step 2 episode-length choice ("5" | "10"). */
@@ -154,37 +151,32 @@ export function PrototypeViewer({
           }),
         );
 
-        const assembled: VariantResult[] = VARIANT_DEFINITIONS.map(
-          (def, i) => {
-            const imageResult = imageResults[i];
-            const styledImage =
-              imageResult.status === "fulfilled"
-                ? imageResult.value
-                : undefined;
-            const videoResult = videoResults[i];
-            if (videoResult.status === "fulfilled") {
-              return {
-                label: def.label,
-                integrationStyle: def.integrationStyle,
-                imageUrl: styledImage,
-                videoUrl: videoResult.value,
-              };
-            }
-            const reason = videoResult.reason;
+        const assembled: VariantResult[] = VARIANT_DEFINITIONS.map((def, i) => {
+          const imageResult = imageResults[i];
+          const styledImage =
+            imageResult.status === "fulfilled" ? imageResult.value : undefined;
+          const videoResult = videoResults[i];
+          if (videoResult.status === "fulfilled") {
             return {
               label: def.label,
               integrationStyle: def.integrationStyle,
               imageUrl: styledImage,
-              videoUrl: null,
-              error:
-                reason instanceof Error
-                  ? reason.message
-                  : "Unknown error generating this variant.",
-              taskId:
-                reason instanceof VideoGenError ? reason.taskId : undefined,
+              videoUrl: videoResult.value,
             };
-          },
-        );
+          }
+          const reason = videoResult.reason;
+          return {
+            label: def.label,
+            integrationStyle: def.integrationStyle,
+            imageUrl: styledImage,
+            videoUrl: null,
+            error:
+              reason instanceof Error
+                ? reason.message
+                : "Unknown error generating this variant.",
+            taskId: reason instanceof VideoGenError ? reason.taskId : undefined,
+          };
+        });
         onVariantsReady(assembled, heroScene.id);
       })
       .catch((err) => {
@@ -279,7 +271,9 @@ export function PrototypeViewer({
           "Animating all three variants...",
           "Almost ready...",
         ]}
-        note="Each variant gets its own styled frame and video — usually 5-6 minutes."
+        note={
+          "Each variant gets its own styled frame and video.\nUsually 6-7 minutes."
+        }
       />
     );
 

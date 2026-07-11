@@ -51,7 +51,11 @@ export function LoadingState({ text, stages, note }: LoadingStateProps) {
       <p key={message} className="animate-fade-in text-sm text-text-secondary">
         {message}
       </p>
-      {note && <p className="text-xs text-text-secondary/70">{note}</p>}
+      {note && (
+        <p className="whitespace-pre-line text-center text-xs text-text-secondary/70">
+          {note}
+        </p>
+      )}
     </div>
   );
 }
