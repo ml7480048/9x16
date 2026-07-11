@@ -48,6 +48,9 @@ export interface StoredSession {
   /** Which variant style `playlist` was built in — lets the UI detect the
    * client switched variants after building and offer a rebuild. */
   playlistLabel?: VariantLabel | null;
+  /** Real stitched mp4 from /api/export-episode — a downloadable file,
+   * distinct from `playlist`'s client-side playback illusion. */
+  episodeVideoUrl?: string | null;
 }
 
 export type SessionStatus = "in-progress" | "complete";

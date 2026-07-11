@@ -40,6 +40,7 @@ export function Wizard() {
     useState<VariantLabel>("A");
   const [playlist, setPlaylist] = useState<PlaylistClip[] | null>(null);
   const [playlistLabel, setPlaylistLabel] = useState<VariantLabel | null>(null);
+  const [episodeVideoUrl, setEpisodeVideoUrl] = useState<string | null>(null);
   const [heroSceneId, setHeroSceneId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -84,6 +85,7 @@ export function Wizard() {
         setHeroSceneId(persisted.heroSceneId ?? null);
         setPlaylist(persisted.playlist ?? null);
         setPlaylistLabel(persisted.playlistLabel ?? null);
+        setEpisodeVideoUrl(persisted.episodeVideoUrl ?? null);
       } else {
         setSessionId(newSessionId());
       }
@@ -119,6 +121,7 @@ export function Wizard() {
       heroSceneId,
       playlist,
       playlistLabel,
+      episodeVideoUrl,
     });
     setCurrentSessionId(sessionId);
   }, [
@@ -136,6 +139,7 @@ export function Wizard() {
     heroSceneId,
     playlist,
     playlistLabel,
+    episodeVideoUrl,
   ]);
 
   function update(partial: Partial<WizardFormData>) {
@@ -228,6 +232,8 @@ export function Wizard() {
               setPlaylist(clips);
               setPlaylistLabel(label);
             }}
+            episodeVideoUrl={episodeVideoUrl}
+            onEpisodeExport={setEpisodeVideoUrl}
           />
         )}
       </div>

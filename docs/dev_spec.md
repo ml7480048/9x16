@@ -150,6 +150,32 @@ Step 5 — Video Preview
 - Available both on wizard Step 5 (`PrototypeViewer`) and on
   `/platform/session/[id]` for already-completed sessions.
 
+### 4.2b MP4 Export (2026-07, reserve-days feature, after Playlist)
+- Once a Playlist episode exists, "Export as MP4 file" downloads the actual
+  file — distinct from the Playlist's client-side playback illusion.
+- `/api/export-episode` downloads each usable clip, runs `lib/ffmpeg.ts`'s
+  `stitchClips()` (concat demuxer, forced re-encode `libx264`, `-an` — no
+  audio, since clips are muted-by-default anyway and Kling clips aren't
+  guaranteed to agree on having an audio track), uploads the result to
+  Vercel Blob (`episodes/<uuid>.mp4`), returns the permanent URL.
+- Uses `ffmpeg-static` (prebuilt binary) via `child_process.execFile` — NOT
+  bundled by Next.js's automatic file tracing on its own (the package only
+  exports a path string), so `next.config.ts` needs both
+  `serverExternalPackages: ["ffmpeg-static"]` AND `outputFileTracingIncludes`
+  pointing at the route, or the deployed function throws "ffmpeg binary not
+  available."
+- Result persisted as `StoredSession.episodeVideoUrl`; a `"export"` quota
+  kind (cap 20/lead) gates the route — no Kling credit spent, but it's still
+  real server compute/bandwidth per click.
+- **Verified locally (2026-07-02):** the concat command was sanity-tested
+  against 3 synthetic clips at mismatched frame rates (24/25/30fps, same
+  720×1280) — produced one valid mp4, confirming the forced-re-encode
+  approach tolerates clips that don't share identical parameters. The
+  `ffmpeg-static` binary itself couldn't be downloaded in the sandbox
+  (network-restricted) — `npm install` on a real machine will fetch it
+  normally; this needs one real end-to-end test on Vercel to confirm the
+  bundling config actually ships the binary.
+
 ### 4.3 Pages / Routes
 
 **Homepage redesign (2026-07-01):** `CompanyIntro.tsx` and `Hero.tsx` used to duplicate the same "test before you shoot" pitch under two separate `<h1>`s — merged into one `Hero.tsx` (`CompanyIntro.tsx` is now dead code, remove via `git rm` next session). `SolutionSection.tsx`'s 5-step breakdown duplicated the how-it-works content that now lives on `/platform` — replaced with a condensed `PlatformTeaser.tsx` (same pattern as the existing `PlayerTeaser.tsx`, both link out to the full explanation rather than repeating it). Hero now has a visual: three tilted 9:16 frames labeled A/B/C, a literal reference to the real Brand Prototype variant feature rather than generic decoration. Stale nav wording fixed on the homepage (`Platform`→`AI Prototype`, `Player`→`Verticals` in copy) — note `/player/page.tsx` itself still says "Player" as a badge, not yet touched (out of scope, that page's content is still a placeholder pending its own pass).

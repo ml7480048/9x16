@@ -50,6 +50,8 @@ interface PrototypeViewerProps {
   playlist: PlaylistClip[] | null;
   playlistLabel: VariantLabel | null;
   onPlaylistReady: (clips: PlaylistClip[], label: VariantLabel) => void;
+  episodeVideoUrl: string | null;
+  onEpisodeExport: (url: string) => void;
 }
 
 /**
@@ -72,6 +74,8 @@ export function PrototypeViewer({
   playlist,
   playlistLabel,
   onPlaylistReady,
+  episodeVideoUrl,
+  onEpisodeExport,
 }: PrototypeViewerProps) {
   const [loading, setLoading] = useState(!variants);
   const [error, setError] = useState<string | null>(null);
@@ -391,6 +395,8 @@ export function PrototypeViewer({
           playlist={playlist}
           playlistLabel={playlistLabel}
           onPlaylistReady={onPlaylistReady}
+          episodeVideoUrl={episodeVideoUrl}
+          onEpisodeExport={onEpisodeExport}
         />
       )}
     </div>

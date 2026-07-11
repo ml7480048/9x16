@@ -65,16 +65,20 @@ export async function listLeads(): Promise<Lead[]> {
 // in the DB to reset someone).
 // ---------------------------------------------------------------------------
 
-export type UsageKind = "scenes" | "script" | "image" | "video" | "match";
+export type UsageKind =
+  "scenes" | "script" | "image" | "video" | "match" | "export";
 
 // Videos are the real money (trial: 100 units); images are cheap (1000
-// units); Claude calls are cents. 30 videos ≈ 10 full Step-5 runs.
+// units); Claude calls are cents. 30 videos ≈ 10 full Step-5 runs. "export"
+// spends no Kling credit (pure ffmpeg + Blob bandwidth) but still gets a
+// light cap — it's server compute triggered by a client click.
 const USAGE_LIMITS: Record<UsageKind, number> = {
   scenes: 60,
   script: 60,
   image: 120,
   video: 30,
   match: 60,
+  export: 20,
 };
 
 let usageSchemaReady = false;

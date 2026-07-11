@@ -33,6 +33,7 @@ export default function SessionDetailPage() {
   const [activeLabel, setActiveLabel] = useState<VariantLabel>("A");
   const [playlist, setPlaylist] = useState<PlaylistClip[] | null>(null);
   const [playlistLabel, setPlaylistLabel] = useState<VariantLabel | null>(null);
+  const [episodeVideoUrl, setEpisodeVideoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     queueMicrotask(() => {
@@ -42,6 +43,7 @@ export default function SessionDetailPage() {
         setActiveLabel(found.activeVariantLabel ?? "A");
         setPlaylist(found.playlist ?? null);
         setPlaylistLabel(found.playlistLabel ?? null);
+        setEpisodeVideoUrl(found.episodeVideoUrl ?? null);
       }
       setHydrated(true);
     });
@@ -56,6 +58,14 @@ export default function SessionDetailPage() {
       playlist: clips,
       playlistLabel: label,
     };
+    saveSession(updated);
+    setSession(updated);
+  }
+
+  function handleEpisodeExport(url: string) {
+    setEpisodeVideoUrl(url);
+    if (!session) return;
+    const updated: StoredSession = { ...session, episodeVideoUrl: url };
     saveSession(updated);
     setSession(updated);
   }
@@ -184,6 +194,8 @@ export default function SessionDetailPage() {
               playlist={playlist}
               playlistLabel={playlistLabel}
               onPlaylistReady={handlePlaylistReady}
+              episodeVideoUrl={episodeVideoUrl}
+              onEpisodeExport={handleEpisodeExport}
             />
           )}
         </div>

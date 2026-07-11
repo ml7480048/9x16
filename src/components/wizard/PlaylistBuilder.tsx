@@ -25,6 +25,10 @@ interface PlaylistBuilderProps {
    * rebuild instead of silently showing a mismatched episode. */
   playlistLabel: VariantLabel | null;
   onPlaylistReady: (clips: PlaylistClip[], label: VariantLabel) => void;
+  /** Real stitched mp4 (see /api/export-episode) — a downloadable file,
+   * distinct from the client-side playback illusion above. */
+  episodeVideoUrl: string | null;
+  onEpisodeExport: (url: string) => void;
 }
 
 /**
@@ -45,9 +49,41 @@ export function PlaylistBuilder({
   playlist,
   playlistLabel,
   onPlaylistReady,
+  episodeVideoUrl,
+  onEpisodeExport,
 }: PlaylistBuilderProps) {
   const [building, setBuilding] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState<string | null>(null);
+
+  const handleExport = useCallback(() => {
+    if (!playlist) return;
+    setExporting(true);
+    setExportError(null);
+    const usableClips = playlist
+      .filter((clip): clip is PlaylistClip & { videoUrl: string } =>
+        Boolean(clip.videoUrl),
+      )
+      .map((clip) => ({ order: clip.order, videoUrl: clip.videoUrl }));
+
+    fetch("/api/export-episode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clips: usableClips }),
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error ?? "Failed to export episode.");
+        onEpisodeExport(data.videoUrl as string);
+      })
+      .catch((err) => {
+        setExportError(
+          err instanceof Error ? err.message : "Something went wrong.",
+        );
+      })
+      .finally(() => setExporting(false));
+  }, [playlist, onEpisodeExport]);
 
   const otherScenes = scenes
     .filter((scene) => scene.id !== heroSceneId)
@@ -176,6 +212,29 @@ export function PlaylistBuilder({
           Full Episode
         </h2>
         <PlaylistPlayer clips={playlist} />
+        <div className="flex flex-col items-center gap-2 pt-2 text-center">
+          {episodeVideoUrl ? (
+            <a
+              href={episodeVideoUrl}
+              download
+              className="text-xs font-medium text-accent underline decoration-dotted"
+            >
+              Download episode (MP4) <span aria-hidden="true">→</span>
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={handleExport}
+              disabled={exporting}
+              className="text-xs font-medium text-accent underline decoration-dotted disabled:pointer-events-none disabled:opacity-40"
+            >
+              {exporting ? "Exporting..." : "Export as MP4 file"}
+            </button>
+          )}
+          {exportError && (
+            <p className="text-xs text-text-secondary">{exportError}</p>
+          )}
+        </div>
       </div>
     );
   }
