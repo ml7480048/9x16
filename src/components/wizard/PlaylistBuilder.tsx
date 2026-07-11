@@ -56,6 +56,56 @@ export function PlaylistBuilder({
   const [error, setError] = useState<string | null>(null);
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Plain `<a download>` doesn't force a save on mobile for a CROSS-ORIGIN
+  // file (this points at *.public.blob.vercel-storage.com, a different
+  // origin from the app) — browsers are free to ignore `download` there,
+  // and iOS Safari in particular just opens the video fullscreen instead of
+  // offering to save it (confirmed live, 2026-07-02). Fetching the bytes
+  // ourselves and using the Web Share API's file-sharing (iOS 16.4+, modern
+  // Android Chrome) surfaces a real "Save Video" option in the native share
+  // sheet. Falls back to a same-origin blob: URL download for
+  // browsers/desktops without file-sharing support.
+  const handleSaveVideo = useCallback(async () => {
+    if (!episodeVideoUrl) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const response = await fetch(episodeVideoUrl);
+      if (!response.ok) throw new Error("Failed to load the video file.");
+      const blob = await response.blob();
+      const file = new File([blob], "9x16-episode.mp4", {
+        type: "video/mp4",
+      });
+
+      const nav = navigator as Navigator & {
+        canShare?: (data: { files: File[] }) => boolean;
+        share?: (data: { files: File[]; title?: string }) => Promise<void>;
+      };
+
+      if (nav.share && nav.canShare?.({ files: [file] })) {
+        await nav.share({ files: [file], title: "9×16 episode" });
+      } else {
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = "9x16-episode.mp4";
+        link.click();
+        URL.revokeObjectURL(objectUrl);
+      }
+    } catch (err) {
+      // AbortError fires when the user just dismisses the native share
+      // sheet without picking anything — not a real failure.
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setSaveError(
+        err instanceof Error ? err.message : "Couldn't save the video.",
+      );
+    } finally {
+      setSaving(false);
+    }
+  }, [episodeVideoUrl]);
 
   const handleExport = useCallback(() => {
     if (!playlist) return;
@@ -214,13 +264,28 @@ export function PlaylistBuilder({
         <PlaylistPlayer clips={playlist} />
         <div className="flex flex-col items-center gap-2 pt-2 text-center">
           {episodeVideoUrl ? (
-            <a
-              href={episodeVideoUrl}
-              download
-              className="text-xs font-medium text-accent underline decoration-dotted"
-            >
-              Download episode (MP4) <span aria-hidden="true">→</span>
-            </a>
+            <>
+              <button
+                type="button"
+                onClick={handleSaveVideo}
+                disabled={saving}
+                className="text-xs font-medium text-accent underline decoration-dotted disabled:pointer-events-none disabled:opacity-40"
+              >
+                {saving ? "Preparing..." : "Save video to device"}{" "}
+                <span aria-hidden="true">→</span>
+              </button>
+              <a
+                href={episodeVideoUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-[10px] text-text-secondary underline decoration-dotted"
+              >
+                Or open the file link directly
+              </a>
+              {saveError && (
+                <p className="text-xs text-text-secondary">{saveError}</p>
+              )}
+            </>
           ) : (
             <button
               type="button"
