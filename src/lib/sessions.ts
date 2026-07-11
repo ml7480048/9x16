@@ -17,7 +17,7 @@
 
 import type { SceneImages, WizardFormData } from "./types";
 import type { EpisodeScript, FormatMatch, SceneDraft } from "./anthropic";
-import type { VariantLabel, VariantResult } from "./kling";
+import type { PlaylistClip, VariantLabel, VariantResult } from "./kling";
 
 export interface StoredSession {
   id: string;
@@ -41,6 +41,13 @@ export interface StoredSession {
   variantsSceneId?: string | null;
   activeVariantLabel: VariantLabel;
   heroSceneId: string | null;
+  /** "Full episode" playlist — remaining scenes styled to match a chosen
+   * variant (see PlaylistBuilder). Optional: sessions saved before this
+   * feature existed simply have no playlist yet. */
+  playlist?: PlaylistClip[] | null;
+  /** Which variant style `playlist` was built in — lets the UI detect the
+   * client switched variants after building and offer a rebuild. */
+  playlistLabel?: VariantLabel | null;
 }
 
 export type SessionStatus = "in-progress" | "complete";

@@ -15,7 +15,7 @@ import {
   type WizardFormData,
 } from "@/lib/types";
 import type { EpisodeScript, FormatMatch, SceneDraft } from "@/lib/anthropic";
-import type { VariantLabel, VariantResult } from "@/lib/kling";
+import type { PlaylistClip, VariantLabel, VariantResult } from "@/lib/kling";
 import {
   getCurrentSessionId,
   getSession,
@@ -38,6 +38,8 @@ export function Wizard() {
   const [variantsSceneId, setVariantsSceneId] = useState<string | null>(null);
   const [activeVariantLabel, setActiveVariantLabel] =
     useState<VariantLabel>("A");
+  const [playlist, setPlaylist] = useState<PlaylistClip[] | null>(null);
+  const [playlistLabel, setPlaylistLabel] = useState<VariantLabel | null>(null);
   const [heroSceneId, setHeroSceneId] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -80,6 +82,8 @@ export function Wizard() {
         setVariantsSceneId(persisted.variantsSceneId ?? null);
         setActiveVariantLabel(persisted.activeVariantLabel ?? "A");
         setHeroSceneId(persisted.heroSceneId ?? null);
+        setPlaylist(persisted.playlist ?? null);
+        setPlaylistLabel(persisted.playlistLabel ?? null);
       } else {
         setSessionId(newSessionId());
       }
@@ -113,6 +117,8 @@ export function Wizard() {
       variantsSceneId,
       activeVariantLabel,
       heroSceneId,
+      playlist,
+      playlistLabel,
     });
     setCurrentSessionId(sessionId);
   }, [
@@ -128,6 +134,8 @@ export function Wizard() {
     variantsSceneId,
     activeVariantLabel,
     heroSceneId,
+    playlist,
+    playlistLabel,
   ]);
 
   function update(partial: Partial<WizardFormData>) {
@@ -168,54 +176,60 @@ export function Wizard() {
           nothing bouncy). Step components already remounted on change via
           the conditional renders, so the key adds no new unmount behavior. */}
       <div key={step} className="animate-fade-in flex flex-1 flex-col">
-      {step === 1 && <BrandInputForm data={data} onChange={update} />}
-      {step === 2 && (
-        <VisualSetupForm
-          data={data}
-          onChange={update}
-          formatMatch={formatMatch}
-          onFormatMatch={setFormatMatch}
-        />
-      )}
-      {step === 3 && (
-        <StoryboardGrid
-          brandData={data}
-          scenes={scenes}
-          onScenesReady={setScenes}
-          images={images}
-          onImagesChange={setImages}
-          heroSceneId={heroSceneId}
-          onHeroSceneChange={setHeroSceneId}
-        />
-      )}
-      {step === 4 && scenes && (
-        <ScriptViewer
-          brandData={data}
-          scenes={scenes}
-          script={script}
-          onScriptReady={setScript}
-        />
-      )}
-      {step === 5 && scenes && (
-        <PrototypeViewer
-          scenes={scenes}
-          images={images}
-          heroSceneId={heroSceneId}
-          variants={variants}
-          variantsSceneId={variantsSceneId}
-          onVariantsReady={(v, sourceSceneId) => {
-            setVariants(v);
-            setVariantsSceneId(sourceSceneId);
-          }}
-          activeLabel={activeVariantLabel}
-          onActiveLabelChange={setActiveVariantLabel}
-          clipDuration={
-            data.episodeLength
-              ? EPISODE_LENGTH_CONFIG[data.episodeLength].clipDuration
-              : "5"
-          }
-        />
-      )}
+        {step === 1 && <BrandInputForm data={data} onChange={update} />}
+        {step === 2 && (
+          <VisualSetupForm
+            data={data}
+            onChange={update}
+            formatMatch={formatMatch}
+            onFormatMatch={setFormatMatch}
+          />
+        )}
+        {step === 3 && (
+          <StoryboardGrid
+            brandData={data}
+            scenes={scenes}
+            onScenesReady={setScenes}
+            images={images}
+            onImagesChange={setImages}
+            heroSceneId={heroSceneId}
+            onHeroSceneChange={setHeroSceneId}
+          />
+        )}
+        {step === 4 && scenes && (
+          <ScriptViewer
+            brandData={data}
+            scenes={scenes}
+            script={script}
+            onScriptReady={setScript}
+          />
+        )}
+        {step === 5 && scenes && (
+          <PrototypeViewer
+            scenes={scenes}
+            images={images}
+            heroSceneId={heroSceneId}
+            variants={variants}
+            variantsSceneId={variantsSceneId}
+            onVariantsReady={(v, sourceSceneId) => {
+              setVariants(v);
+              setVariantsSceneId(sourceSceneId);
+            }}
+            activeLabel={activeVariantLabel}
+            onActiveLabelChange={setActiveVariantLabel}
+            clipDuration={
+              data.episodeLength
+                ? EPISODE_LENGTH_CONFIG[data.episodeLength].clipDuration
+                : "5"
+            }
+            playlist={playlist}
+            playlistLabel={playlistLabel}
+            onPlaylistReady={(clips, label) => {
+              setPlaylist(clips);
+              setPlaylistLabel(label);
+            }}
+          />
+        )}
       </div>
 
       <div className="mt-auto flex justify-between gap-3">

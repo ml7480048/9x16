@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { LoadingState } from "./LoadingState";
 import { ErrorState } from "./ErrorState";
+import { PlaylistBuilder } from "./PlaylistBuilder";
 import { VerticalPlayer } from "@/components/player/VerticalPlayer";
 import { VariantSwitcher } from "@/components/player/VariantSwitcher";
 import type { SceneDraft } from "@/lib/anthropic";
@@ -10,6 +11,7 @@ import type { SceneImages } from "@/lib/types";
 import {
   VARIANT_DEFINITIONS,
   type ClipDuration,
+  type PlaylistClip,
   type VariantLabel,
   type VariantResult,
 } from "@/lib/kling";
@@ -43,6 +45,11 @@ interface PrototypeViewerProps {
   onActiveLabelChange: (label: VariantLabel) => void;
   /** Kling clip length from the Step 2 episode-length choice ("5" | "10"). */
   clipDuration: ClipDuration;
+  /** "Full episode" playlist — remaining scenes styled to match a chosen
+   * variant, see PlaylistBuilder. */
+  playlist: PlaylistClip[] | null;
+  playlistLabel: VariantLabel | null;
+  onPlaylistReady: (clips: PlaylistClip[], label: VariantLabel) => void;
 }
 
 /**
@@ -62,6 +69,9 @@ export function PrototypeViewer({
   activeLabel,
   onActiveLabelChange,
   clipDuration,
+  playlist,
+  playlistLabel,
+  onPlaylistReady,
 }: PrototypeViewerProps) {
   const [loading, setLoading] = useState(!variants);
   const [error, setError] = useState<string | null>(null);
@@ -371,6 +381,18 @@ export function PrototypeViewer({
           ? "Regenerate all 3 variants"
           : "Regenerate variants anyway"}
       </button>
+
+      {heroScene && (
+        <PlaylistBuilder
+          scenes={scenes}
+          heroSceneId={heroScene.id}
+          activeVariant={active}
+          clipDuration={clipDuration}
+          playlist={playlist}
+          playlistLabel={playlistLabel}
+          onPlaylistReady={onPlaylistReady}
+        />
+      )}
     </div>
   );
 }

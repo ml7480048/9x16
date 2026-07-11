@@ -132,6 +132,24 @@ Step 5 — Video Preview
   `/api/generate-variants` route and `generateBrandVariants()` are removed;
   `/api/generate-video` returns `taskId` on poll timeout for "Check again".
 
+### 4.2a "Full Episode" Playlist (2026-07-02, reserve-days feature)
+- Once the client has a favorite variant on Step 5, `PlaylistBuilder` (manual
+  button, not auto-triggered) generates matching styled clips for the
+  REMAINING storyboard scenes — same imageModifier/motion prompt as the
+  chosen variant — and hands the full ordered set to `PlaylistPlayer`.
+- `PlaylistPlayer` plays scenes back-to-back (`VerticalPlayer`'s new
+  `autoPlay`/`onEnded` props), auto-advancing on `ended`; a scene with no
+  video (failed / mock mode) auto-advances after a 3s still-image beat
+  instead of stalling. This is a client-side playback illusion — **not**
+  real video stitching (that's a separate later `ffmpeg` step).
+- The Money Shot scene's own clip is reused as-is (already generated,
+  0 extra credit); cost is 1 image + 1 video credit per *other* scene.
+- Persisted on `StoredSession` as `playlist`/`playlistLabel`; if the client
+  switches the active variant after building, the UI flags the mismatch and
+  offers "Rebuild" (same staleness pattern as the variant/Money-Shot check).
+- Available both on wizard Step 5 (`PrototypeViewer`) and on
+  `/platform/session/[id]` for already-completed sessions.
+
 ### 4.3 Pages / Routes
 
 **Homepage redesign (2026-07-01):** `CompanyIntro.tsx` and `Hero.tsx` used to duplicate the same "test before you shoot" pitch under two separate `<h1>`s — merged into one `Hero.tsx` (`CompanyIntro.tsx` is now dead code, remove via `git rm` next session). `SolutionSection.tsx`'s 5-step breakdown duplicated the how-it-works content that now lives on `/platform` — replaced with a condensed `PlatformTeaser.tsx` (same pattern as the existing `PlayerTeaser.tsx`, both link out to the full explanation rather than repeating it). Hero now has a visual: three tilted 9:16 frames labeled A/B/C, a literal reference to the real Brand Prototype variant feature rather than generic decoration. Stale nav wording fixed on the homepage (`Platform`→`AI Prototype`, `Player`→`Verticals` in copy) — note `/player/page.tsx` itself still says "Player" as a badge, not yet touched (out of scope, that page's content is still a placeholder pending its own pass).

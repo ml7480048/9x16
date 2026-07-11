@@ -362,6 +362,27 @@ export interface VariantResult {
   taskId?: string;
 }
 
+// ---------------------------------------------------------------------------
+// Playlist episode (reserve-days feature, 2026-07): once the client picks a
+// favorite variant on Step 5, the Money Shot scene already has a styled clip
+// for that style. This generates matching styled clips for the REMAINING
+// storyboard scenes, so playing them in scene order (PlaylistPlayer) feels
+// like one continuous episode instead of a single hero shot — the "full
+// episode" from the roadmap, without real mp4 stitching (that's a separate,
+// later ffmpeg step).
+// ---------------------------------------------------------------------------
+
+export interface PlaylistClip {
+  sceneId: string;
+  order: number;
+  imageUrl?: string;
+  /** null when this scene's video failed or we're in mock mode — the
+   * PlaylistPlayer falls back to showing the still image briefly, then
+   * auto-advances, same "never a dead end" principle as VerticalPlayer. */
+  videoUrl?: string | null;
+  error?: string;
+}
+
 // generateBrandVariants (server-side 3-video batch) was removed 2026-07-02:
 // the v3 per-variant-start-image flow chains image + video per variant,
 // which doesn't fit inside one Vercel function invocation — PrototypeViewer

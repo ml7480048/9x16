@@ -17,6 +17,14 @@ interface VerticalPlayerProps {
    * dev spec §11) — pauses playback so a hidden, unmuted video can't keep
    * playing audio underneath the visible one. Defaults to true. */
   active?: boolean;
+  /** Starts playing (muted, so browser autoplay policies allow it) instead
+   * of waiting for a tap — used by PlaylistPlayer so "full episode" playback
+   * doesn't require a tap between every scene. Defaults false so every other
+   * caller keeps the original tap-to-play behavior. */
+  autoPlay?: boolean;
+  /** Fires when the clip finishes — PlaylistPlayer uses this to advance to
+   * the next scene. Ignored (never fires) when there's no `videoUrl`. */
+  onEnded?: () => void;
   className?: string;
 }
 
@@ -84,12 +92,14 @@ export function VerticalPlayer({
   posterUrl,
   label = "Scene preview",
   active = true,
+  autoPlay = false,
+  onEnded,
   className,
 }: VerticalPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [isMuted, setIsMuted] = useState(true);
-  const [showControls, setShowControls] = useState(true);
+  const [showControls, setShowControls] = useState(!autoPlay);
   const [hasError, setHasError] = useState(false);
 
   // Pause when hidden by the variant switcher; when this player becomes
@@ -171,10 +181,15 @@ export function VerticalPlayer({
         src={videoUrl}
         poster={posterUrl ?? undefined}
         muted={isMuted}
-        loop
+        autoPlay={autoPlay}
+        loop={!onEnded}
         playsInline
         preload="auto"
         onError={() => setHasError(true)}
+        onEnded={() => {
+          setIsPlaying(false);
+          onEnded?.();
+        }}
         className="h-full w-full object-cover"
       />
       {hasError && (

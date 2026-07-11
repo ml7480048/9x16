@@ -6,16 +6,19 @@ import { useParams, useRouter } from "next/navigation";
 import { buttonVariants } from "@/components/ui/Button";
 import { VerticalPlayer } from "@/components/player/VerticalPlayer";
 import { VariantSwitcher } from "@/components/player/VariantSwitcher";
+import { PlaylistBuilder } from "@/components/wizard/PlaylistBuilder";
 import { WIZARD_STEP_NAMES } from "@/components/wizard/StepIndicator";
 import {
   deleteSession,
   FORMAT_LABELS,
   getSession,
   mediaLikelyExpired,
+  saveSession,
   sessionStatus,
   type StoredSession,
 } from "@/lib/sessions";
-import type { VariantLabel } from "@/lib/kling";
+import type { PlaylistClip, VariantLabel } from "@/lib/kling";
+import { EPISODE_LENGTH_CONFIG } from "@/lib/types";
 
 // Day 13 — session detail. In-progress sessions get a "Continue" CTA that
 // reopens the wizard at the saved step (via ?session=<id>); complete ones
@@ -28,15 +31,34 @@ export default function SessionDetailPage() {
   const [session, setSession] = useState<StoredSession | null>(null);
   const [hydrated, setHydrated] = useState(false);
   const [activeLabel, setActiveLabel] = useState<VariantLabel>("A");
+  const [playlist, setPlaylist] = useState<PlaylistClip[] | null>(null);
+  const [playlistLabel, setPlaylistLabel] = useState<VariantLabel | null>(null);
 
   useEffect(() => {
     queueMicrotask(() => {
       const found = id ? getSession(id) : null;
       setSession(found);
-      if (found) setActiveLabel(found.activeVariantLabel ?? "A");
+      if (found) {
+        setActiveLabel(found.activeVariantLabel ?? "A");
+        setPlaylist(found.playlist ?? null);
+        setPlaylistLabel(found.playlistLabel ?? null);
+      }
       setHydrated(true);
     });
   }, [id]);
+
+  function handlePlaylistReady(clips: PlaylistClip[], label: VariantLabel) {
+    setPlaylist(clips);
+    setPlaylistLabel(label);
+    if (!session) return;
+    const updated: StoredSession = {
+      ...session,
+      playlist: clips,
+      playlistLabel: label,
+    };
+    saveSession(updated);
+    setSession(updated);
+  }
 
   if (!hydrated) return <div className="flex-1" />;
 
@@ -99,9 +121,8 @@ export default function SessionDetailPage() {
 
       {expired && (
         <p className="text-xs text-text-secondary">
-          Generated previews are kept for about 30 days — media in this
-          session may no longer load. Re-run the session to generate fresh
-          previews.
+          Generated previews are kept for about 30 days — media in this session
+          may no longer load. Re-run the session to generate fresh previews.
         </p>
       )}
 
@@ -146,6 +167,25 @@ export default function SessionDetailPage() {
             activeLabel={activeLabel}
             onSelect={setActiveLabel}
           />
+          {heroScene && (
+            <PlaylistBuilder
+              scenes={session.scenes ?? []}
+              heroSceneId={heroScene.id}
+              activeVariant={
+                session.variants!.find((v) => v.label === activeLabel) ??
+                session.variants![0]
+              }
+              clipDuration={
+                session.data.episodeLength
+                  ? EPISODE_LENGTH_CONFIG[session.data.episodeLength]
+                      .clipDuration
+                  : "5"
+              }
+              playlist={playlist}
+              playlistLabel={playlistLabel}
+              onPlaylistReady={handlePlaylistReady}
+            />
+          )}
         </div>
       )}
 
